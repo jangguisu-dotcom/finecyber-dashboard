@@ -532,45 +532,54 @@ function renderBizCards(){
   });
 
   // ── 월별 요약 박스 ──
+  // 해당 월에 종강하는 수강생 (en이 해당 월 안에 있는 경우)
   const mArr=biz.type==='guard'?arr:arr.filter(r=>r.st&&r.en&&new Date(r.st)<=mEnd&&new Date(r.en)>=mStart);
+  // 해당 월 종강자 (수료 판정 대상)
+  const mEndArr=biz.type==='guard'?arr:arr.filter(r=>r.en&&new Date(r.en)>=mStart&&new Date(r.en)<=mEnd);
   const mTotFee=mArr.reduce((s,r)=>s+calcFee(r,biz.type),0);
   let mDone=0,mRate=0,mUrgCnt=0;
   if(biz.type==='self'||biz.type==='refund'){
-    mDone=mArr.filter(r=>r.pr>=80&&(r.sc||0)>=60).length;
-    mRate=mArr.length?Math.round(mDone/mArr.length*100):0;
+    // 해당 월 종강자 중 수료 완료 (진도 80%+ 평가 60점+)
+    mDone=mEndArr.filter(r=>r.pr>=80&&(r.sc||0)>=60).length;
+    mRate=mEndArr.length?Math.round(mDone/mEndArr.length*100):0;
     mUrgCnt=mArr.filter(r=>isOn(r)&&r.pr<50).length;
   }else if(biz.type==='legal'){
-    mDone=mArr.filter(r=>r.pr>=100).length;
-    mRate=mArr.length?Math.round(mDone/mArr.length*100):0;
+    // 해당 월 종강자 중 수료 완료
+    mDone=mEndArr.filter(r=>r.pr>=100).length;
+    mRate=mEndArr.length?Math.round(mDone/mEndArr.length*100):0;
   }else{
-    mDone=mArr.reduce((s,r)=>s+(r.sessions||[])[curMonth]===1?1:0,0);
+    mDone=mArr.reduce((s,r)=>(r.sessions||[])[curMonth]===1?s+1:s,0);
     mRate=mArr.length?Math.round(mDone/mArr.length*100):0;
   }
   const mRateColor=mRate>=80?'#3B6D11':mRate>=50?'#854F0B':'#E24B4A';
   const mSumEl=document.getElementById('monthSummary');
   if(mSumEl){
     if(mArr.length>0){
-      mSumEl.innerHTML=`<div style="background:#fff;border:1px solid #EBEBEB;border-radius:12px;padding:14px 16px;margin-bottom:14px">
-        <div style="font-size:11px;font-weight:700;color:#888;letter-spacing:.04em;text-transform:uppercase;margin-bottom:10px">${curYear}년 ${MOS[curMonth]} 월별 현황</div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
-          <div style="text-align:center;padding:10px;background:#F8F9FA;border-radius:8px">
-            <div style="font-size:11px;color:#888;margin-bottom:4px">수강 고객사</div>
-            <div style="font-size:20px;font-weight:700;color:#185FA5">${filteredCos.length}<span style="font-size:12px;font-weight:400;color:#888">개</span></div>
+      mSumEl.innerHTML=`<div style="background:#F4F6F9;border:1px solid #DDE1E8;border-radius:12px;padding:16px 20px;margin-bottom:14px">
+        <div style="font-size:12px;font-weight:700;color:#555;letter-spacing:.04em;margin-bottom:12px;display:flex;align-items:center;gap:6px">
+          <i class="ti ti-calendar-stats" style="font-size:15px;color:#185FA5"></i>
+          ${curYear}년 ${MOS[curMonth]} 월별 현황
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+          <div style="text-align:center;padding:14px 10px;background:#fff;border-radius:10px;border:1px solid #E2E6EE;box-shadow:0 1px 4px rgba(0,0,0,.05)">
+            <div style="font-size:12px;color:#6B7485;margin-bottom:6px;font-weight:600">수강 고객사</div>
+            <div style="font-size:24px;font-weight:800;color:#185FA5;letter-spacing:-.5px">${filteredCos.length}<span style="font-size:13px;font-weight:500;color:#9EA6B4">개</span></div>
           </div>
-          <div style="text-align:center;padding:10px;background:#F8F9FA;border-radius:8px">
-            <div style="font-size:11px;color:#888;margin-bottom:4px">수강생</div>
-            <div style="font-size:20px;font-weight:700;color:#1D9E75">${mArr.length}<span style="font-size:12px;font-weight:400;color:#888">명</span></div>
+          <div style="text-align:center;padding:14px 10px;background:#fff;border-radius:10px;border:1px solid #E2E6EE;box-shadow:0 1px 4px rgba(0,0,0,.05)">
+            <div style="font-size:12px;color:#6B7485;margin-bottom:6px;font-weight:600">수강생</div>
+            <div style="font-size:24px;font-weight:800;color:#1D9E75;letter-spacing:-.5px">${mArr.length}<span style="font-size:13px;font-weight:500;color:#9EA6B4">명</span></div>
           </div>
-          <div style="text-align:center;padding:10px;background:#F8F9FA;border-radius:8px">
-            <div style="font-size:11px;color:#888;margin-bottom:4px">${biz.type==='guard'?'출석':'수료완료'}</div>
-            <div style="font-size:20px;font-weight:700;color:#3B6D11">${mDone}<span style="font-size:12px;font-weight:400;color:${mRateColor}"> ${mRate}%</span></div>
+          <div style="text-align:center;padding:14px 10px;background:#fff;border-radius:10px;border:1px solid #E2E6EE;box-shadow:0 1px 4px rgba(0,0,0,.05)">
+            <div style="font-size:12px;color:#6B7485;margin-bottom:6px;font-weight:600">${biz.type==='guard'?'출석':'수료완료'}</div>
+            <div style="font-size:24px;font-weight:800;color:#3B6D11;letter-spacing:-.5px">${mDone}<span style="font-size:13px;font-weight:500;color:${mRateColor}"> ${mRate}%</span></div>
+            ${biz.type!=='guard'?`<div style="font-size:11px;color:#AAA;margin-top:3px">종강 ${mEndArr.length}명 중</div>`:''}
           </div>
-          <div style="text-align:center;padding:10px;background:#F8F9FA;border-radius:8px">
-            <div style="font-size:11px;color:#888;margin-bottom:4px">예상 수수료</div>
-            <div style="font-size:15px;font-weight:700;color:#7C3AED;margin-top:4px">${W(mTotFee)}</div>
+          <div style="text-align:center;padding:14px 10px;background:#fff;border-radius:10px;border:1px solid #E2E6EE;box-shadow:0 1px 4px rgba(0,0,0,.05)">
+            <div style="font-size:12px;color:#6B7485;margin-bottom:6px;font-weight:600">예상 수수료</div>
+            <div style="font-size:17px;font-weight:800;color:#7C3AED;margin-top:6px;letter-spacing:-.3px">${W(mTotFee)}</div>
           </div>
         </div>
-        ${biz.type==='self'&&mUrgCnt>0?`<div style="margin-top:10px;padding:7px 12px;background:#FFF1F1;border-radius:6px;border:1px solid #FCA5A5;font-size:12px;color:#DC2626;font-weight:600"><i class="ti ti-alert-circle" style="margin-right:4px"></i>즉시 독려 필요 ${mUrgCnt}명 · 진도 50% 미만</div>`:''}
+        ${biz.type==='self'&&mUrgCnt>0?`<div style="margin-top:12px;padding:9px 14px;background:#F9FAFB;border-radius:8px;border:1px solid #DDE1E8;font-size:13px;color:#DC2626;font-weight:600;display:flex;align-items:center;gap:6px"><i class="ti ti-alert-circle" style="font-size:16px"></i>즉시 독려 필요 ${mUrgCnt}명 · 진도 50% 미만</div>`:''}
       </div>`;
     } else {
       mSumEl.innerHTML='';
