@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>파인사이버 통합 수강관리 대시보드</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;font-size:14px;background:#F5F5F5;color:#222}
+.layout{display:grid;grid-template-columns:180px 1fr;height:100vh;overflow:hidden}
+.sidebar{background:#fff;display:flex;flex-direction:column;overflow-y:auto;border-right:1px solid #E8ECEF}
+.sb-brand{padding:20px 16px 16px;border-bottom:1px solid #F0F2F5}
+.sb-logo{font-size:11px;color:#4B7EC8;letter-spacing:.1em;font-weight:700;margin-bottom:5px}
+.sb-name{font-size:14px;font-weight:700;color:#0C2340;line-height:1.45}
+.sb-sub{font-size:11px;color:#9BA5B4;margin-top:4px}
+.sb-sec{padding:15px 13px 5px;font-size:10px;color:#B0B8C4;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
+.sbi{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:7px;margin:2px 7px;cursor:pointer;color:#6B7485;font-size:13px;font-weight:500;transition:all .12s}
+.sbi:hover{background:#F3F6FA;color:#0C2340}
+.sbi.on{background:#E8F0FE;color:#185FA5;font-weight:700}
+.sbi i{font-size:16px;flex-shrink:0}
+.sbdg{margin-left:auto;font-size:11px;padding:1px 6px;border-radius:99px;font-weight:600;background:#E24B4A;color:#fff}
+.sdiv{height:1px;background:#F0F2F5;margin:7px 13px}
+.sb-bot{margin-top:auto;padding:13px 11px;border-top:1px solid #F0F2F5;display:flex;align-items:center;gap:9px}
+.av{width:31px;height:31px;border-radius:50%;background:#0C2340;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff}
+.main{display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:#fff;border-bottom:1px solid #E8E8E8;padding:11px 20px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.tbt{font-size:16px;font-weight:600;color:#111}
+.tbs{font-size:12px;color:#999;margin-top:1px}
+.tbr{display:flex;gap:7px}
+.btn{display:inline-flex;align-items:center;gap:5px;font-size:13px;padding:6px 12px;border-radius:8px;border:1px solid #DDD;background:#fff;color:#555;cursor:pointer;white-space:nowrap}
+.btn:hover{background:#F5F5F5}
+.btn.p{background:#0C2340;color:#fff;border-color:#0C2340}
+.btn.p:hover{background:#185FA5;border-color:#185FA5}
+.biz-tabs{display:flex;background:#fff;border-bottom:1px solid #E8E8E8;flex-shrink:0}
+.biz-tab{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 8px;cursor:pointer;border-bottom:2.5px solid transparent;gap:3px;transition:background .12s}
+.biz-tab:hover{background:#F8F8F8}
+.biz-tab.on{border-bottom-color:#185FA5;background:#F0F6FF}
+.biz-tab i{font-size:19px;color:#999}
+.biz-tab.on i{color:#185FA5}
+.biz-tab-name{font-size:12px;font-weight:500;color:#888;text-align:center;line-height:1.3}
+.biz-tab.on .biz-tab-name{color:#185FA5;font-weight:600}
+.cnt{padding:14px;flex:1;overflow-y:auto}
+.mg{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+.mc{background:#fff;border:1px solid #EBEBEB;border-radius:12px;padding:13px 14px;border-top:3px solid #EBEBEB;transition:box-shadow .12s}
+.mi{font-size:19px;margin-bottom:7px}
+.ml{font-size:12px;color:#888;margin-bottom:3px}
+.mv{font-size:21px;font-weight:600;line-height:1.2}
+.ms{font-size:12px;color:#AAA;margin-top:3px}
+.sl{font-size:12px;font-weight:600;color:#888;margin-bottom:8px;letter-spacing:.03em;text-transform:uppercase}
+.cg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.cc{background:#fff;border:1px solid #EBEBEB;border-radius:12px;padding:13px;cursor:pointer;transition:border-color .15s,transform .1s,box-shadow .1s}
+.cc:hover{border-color:#378ADD;transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.cc.sel{border:2px solid #185FA5}
+.bdg{display:inline-flex;font-size:11px;padding:2px 8px;border-radius:99px;font-weight:600;white-space:nowrap}
+.bon{background:#E6F1FB;color:#0C447C}
+.bof{background:#F1EFE8;color:#5F5E5A}
+.b10{background:#EAF3DE;color:#3B6D11}
+.b80{background:#FAEEDA;color:#633806}
+.bno{background:#FCEBEB;color:#791F1F}
+.pil{font-size:12px;padding:3px 10px;border-radius:99px;font-weight:600}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,0);pointer-events:none;transition:background .22s;z-index:100}
+.ov.on{background:rgba(0,0,0,.3);pointer-events:auto}
+.dw{position:fixed;top:0;right:0;width:560px;height:100vh;background:#fff;border-left:1px solid #E8E8E8;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .22s cubic-bezier(.4,0,.2,1);z-index:101;overflow:hidden}
+.dw.on{transform:translateX(0)}
+.dwh{padding:14px 16px;border-bottom:1px solid #E8E8E8;display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0}
+.dwt{font-size:15px;font-weight:600}
+.dwm{font-size:12px;color:#999;margin-top:2px}
+.dwx{background:none;border:none;font-size:23px;color:#AAA;cursor:pointer;line-height:1}
+.dwba{display:flex;gap:6px;padding:9px 16px;border-bottom:1px solid #E8E8E8;flex-wrap:wrap;flex-shrink:0;align-items:center}
+.dwpi{display:flex;gap:5px;padding:8px 16px;flex-wrap:wrap;flex-shrink:0;background:#FAFAFA;border-bottom:1px solid #E8E8E8}
+.dwsu{padding:10px 16px 12px;border-bottom:1px solid #E8E8E8;flex-shrink:0;background:#FAFAFA}
+.sugg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:9px}
+.sugc{background:#fff;border:1px solid #EBEBEB;border-radius:8px;padding:8px;text-align:center}
+.sugv{font-size:17px;font-weight:600}
+.sugl{font-size:11px;color:#AAA;margin-top:2px}
+.segbar{display:flex;height:10px;border-radius:99px;overflow:hidden;gap:1px;margin-bottom:5px;background:#EEE}
+.segleg{display:flex;gap:8px;flex-wrap:wrap}
+.segit{display:flex;align-items:center;gap:3px;font-size:11px;color:#888}
+.segd{width:8px;height:8px;border-radius:2px}
+.evalrow{display:flex;align-items:center;gap:7px;padding-top:8px;border-top:1px solid #EBEBEB;margin-top:2px}
+.evalb{flex:1;height:6px;background:#EEE;border-radius:99px;overflow:hidden}
+.evalf{height:100%;background:#378ADD;border-radius:99px}
+.tabr{display:flex;border-bottom:1px solid #E8E8E8;flex-shrink:0;background:#fff}
+.tab{font-size:13px;padding:8px 14px;border:none;background:none;color:#888;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab.on{color:#185FA5;border-bottom-color:#185FA5;font-weight:600}
+.dwbd{flex:1;overflow-y:auto}
+.bbt{font-size:12px;padding:4px 11px;border-radius:99px;border:1px solid #DDD;background:#fff;color:#666;cursor:pointer}
+.bbt:hover{background:#F5F5F5}
+.bbt.on{background:#0C2340;color:#fff;border-color:#0C2340}
+table{width:100%;border-collapse:collapse;font-size:13px}
+table th{font-size:11px;font-weight:600;color:#999;text-align:left;padding:7px 12px;border-bottom:1px solid #EBEBEB;white-space:nowrap;background:#FAFAFA}
+table td{padding:8px 12px;border-bottom:1px solid #F0F0F0;color:#222;vertical-align:middle}
+table tbody tr:last-child td{border-bottom:none}
+table tbody tr:hover{background:#F8FBFF}
+table tfoot td{padding:8px 12px;background:#F5F5F5;font-weight:600}
+.pb{height:5px;background:#EEE;border-radius:99px;overflow:hidden;width:48px;display:inline-block;vertical-align:middle}
+.pf{height:100%;border-radius:99px;display:block}
+.notice{background:#F0F6FF;border:1px solid #C5DCFA;border-radius:8px;padding:9px 13px;font-size:12px;color:#185FA5;margin-bottom:12px;display:flex;align-items:flex-start;gap:8px}
+.uzn{border:2px dashed #DDD;border-radius:12px;padding:32px 20px;text-align:center;cursor:pointer;margin-bottom:12px;transition:all .15s}
+.uzn:hover{border-color:#378ADD;background:#F0F6FF}
+.fee-total{background:#0C2340;border-radius:12px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.mbtn{font-size:12px;padding:4px 10px;border-radius:99px;border:1px solid #DDD;background:#fff;color:#666;cursor:pointer;transition:all .12s}
+.mbtn:hover{background:#F0F6FF;border-color:#378ADD;color:#185FA5}
+.mbtn.on{background:#0C2340;color:#fff;border-color:#0C2340;font-weight:600}
+.ybtn{font-size:13px;padding:5px 14px;border-radius:8px;border:1px solid #DDD;background:#fff;color:#555;cursor:pointer;font-weight:600;transition:all .12s}
+.ybtn:hover{background:#F0F6FF;border-color:#378ADD;color:#185FA5}
+.ybtn.on{background:#185FA5;color:#fff;border-color:#185FA5}
+
+/* ── 로그인 화면 ── */
+#loginScreen{position:fixed;inset:0;background:#0C2340;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .35s}
+#loginScreen.hide{opacity:0;pointer-events:none}
+.login-box{width:320px;text-align:center}
+.login-logo{font-size:12px;color:rgba(255,255,255,.35);letter-spacing:.15em;margin-bottom:8px}
+.login-title{font-size:23px;font-weight:700;color:#fff;line-height:1.4;margin-bottom:4px}
+.login-sub{font-size:13px;color:rgba(255,255,255,.35);margin-bottom:36px}
+.login-label{font-size:12px;color:rgba(255,255,255,.45);text-align:left;margin-bottom:6px;display:block}
+.login-input{width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,.12);background:rgba(255,255,255,.07);color:#fff;font-size:16px;font-family:inherit;letter-spacing:.2em;outline:none;transition:border .15s;text-align:center}
+.login-input:focus{border-color:rgba(255,255,255,.4)}
+.login-input.err{border-color:#E24B4A;animation:shake .35s}
+.login-btn{width:100%;margin-top:14px;padding:12px;border-radius:10px;border:none;background:#185FA5;color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s}
+.login-btn:hover{background:#1D75CC}
+.login-err{font-size:13px;color:#E24B4A;margin-top:10px;min-height:18px}
+.login-ver{font-size:11px;color:rgba(255,255,255,.18);margin-top:40px}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+/* ── 비밀번호 변경 모달 ── */
+#pwModal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:999;opacity:0;pointer-events:none;transition:opacity .2s}
+#pwModal.on{opacity:1;pointer-events:auto}
+.pw-box{background:#fff;border-radius:16px;padding:24px;width:300px;box-shadow:0 12px 40px rgba(0,0,0,.2)}
+.pw-box h3{font-size:15px;font-weight:700;margin-bottom:18px;color:#111}
+.pw-field{margin-bottom:12px}
+.pw-field label{font-size:12px;color:#888;display:block;margin-bottom:5px}
+.pw-field input{width:100%;padding:9px 12px;border:1.5px solid #DDD;border-radius:8px;font-size:14px;font-family:inherit;outline:none;transition:border .15s}
+.pw-field input:focus{border-color:#185FA5}
+.pw-field input.err{border-color:#E24B4A}
+.pw-actions{display:flex;gap:8px;margin-top:18px}
+.pw-actions button{flex:1;padding:9px;border-radius:8px;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+.pw-cancel{background:#F5F5F5;color:#666}
+.pw-confirm{background:#0C2340;color:#fff}
+.pw-confirm:hover{background:#185FA5}
+.pw-msg{font-size:12px;margin-top:8px;min-height:16px}
+</style>
+</head>
+<body>
+<!-- 로그인 화면 -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">FINE CYBER</div>
+    <div class="login-title">파인사이버<br>평생교육원</div>
+    <div class="login-sub">통합 수강관리 시스템</div>
+    <label class="login-label">비밀번호</label>
+    <input class="login-input" id="loginPw" type="password" placeholder="••••" maxlength="20" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()">로그인</button>
+    <div class="login-err" id="loginErr"></div>
+    <div class="login-ver">파인사이버 통합대시보드 v2.0</div>
+  </div>
+</div>
+
+<!-- 비밀번호 변경 모달 -->
+<div id="pwModal">
+  <div class="pw-box">
+    <h3>🔒 비밀번호 변경</h3>
+    <div class="pw-field"><label>현재 비밀번호</label><input type="password" id="pwCur" placeholder="현재 비밀번호 입력"></div>
+    <div class="pw-field"><label>새 비밀번호</label><input type="password" id="pwNew" placeholder="새 비밀번호 입력"></div>
+    <div class="pw-field"><label>새 비밀번호 확인</label><input type="password" id="pwNew2" placeholder="다시 입력"></div>
+    <div class="pw-msg" id="pwMsg"></div>
+    <div class="pw-actions">
+      <button class="pw-cancel" onclick="closePwModal()">취소</button>
+      <button class="pw-confirm" onclick="changePw()">변경</button>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+<div class="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo">FINE CYBER</div>
+    <div class="sb-name">파인사이버<br>평생교육원</div>
+    <div class="sb-sub">통합 수강관리 시스템</div>
+  </div>
+  <div class="sb-sec">사업 현황</div>
+  <div class="sbi on" id="ndb" onclick="goSB('overview',this)"><i class="ti ti-layout-dashboard"></i>전체 현황</div>
+  <div class="sdiv"></div>
+  <div class="sb-sec">관리</div>
+  <div class="sbi" onclick="goSB('urgent',this)"><i class="ti ti-bell"></i>독려 대상<span class="sbdg" id="ubdg">0</span></div>
+  <div class="sbi" onclick="goSB('fee',this)"><i class="ti ti-coin"></i>수수료 정산</div>
+  <div class="sbi" onclick="loadAllSheets()"><i class="ti ti-refresh"></i>시트 동기화 🔄</div>
+  <div class="sdiv"></div>
+  <div class="sb-sec">빠른 실행</div>
+  <div class="sbi" onclick="alert('Claude에서 정산 보고서를 만들어드립니다.')"><i class="ti ti-file-invoice"></i>정산 보고서</div>
+  <div class="sbi" onclick="openPwModal()"><i class="ti ti-lock"></i>비밀번호 변경</div>
+  <div class="sb-bot">
+    <div class="av">수</div>
+    <div><div style="font-size:12px;color:#fff;font-weight:600">부대표</div><div style="font-size:10px;color:rgba(255,255,255,.35)">관리자</div></div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div><div class="tbt" id="pgtit">전체 현황</div><div class="tbs" id="pgsub">샘플 데이터 · 구글 시트 동기화 시 자동 반영</div></div>
+    <div class="tbr">
+      <button class="btn" onclick="loadAllSheets()" title="구글 시트에서 최신 데이터 불러오기"><i class="ti ti-refresh"></i> 시트 동기화</button>
+      <button class="btn p"><i class="ti ti-file-invoice"></i> 정산 보고서</button>
+    </div>
+  </div>
+  <div class="biz-tabs" id="bizTabs">
+    <div class="biz-tab on" onclick="setBiz(0,this)"><i class="ti ti-school"></i><div class="biz-tab-name">자체교육원</div></div>
+    <div class="biz-tab" onclick="setBiz(1,this)"><i class="ti ti-building-bank"></i><div class="biz-tab-name">사업주<br>환급과정</div></div>
+    <div class="biz-tab" onclick="setBiz(2,this)"><i class="ti ti-certificate"></i><div class="biz-tab-name">법정의무<br>교육</div></div>
+    <div class="biz-tab" onclick="setBiz(3,this)"><i class="ti ti-shield"></i><div class="biz-tab-name">경비직무<br>교육</div></div>
+  </div>
+  <div class="cnt" id="cnt"></div>
+</div>
+</div>
+
+<div class="ov" id="ov" onclick="cldw()"></div>
+<div class="dw" id="dw">
+  <div class="dwh"><div><div class="dwt" id="dwtit"></div><div class="dwm" id="dwmet"></div></div><button class="dwx" onclick="cldw()">×</button></div>
+  <div class="dwba" id="dwbat"></div>
+  <div class="dwpi" id="dwpil"></div>
+  <div class="dwsu" id="dwsum"></div>
+  <div class="tabr" id="dwTabRow"></div>
+  <div class="dwbd" id="dwbd"></div>
+</div>
+
+<script>
+// ── 비밀번호 / 로그인 ──
+const DEFAULT_PW='1234';
+function getPw(){return localStorage.getItem('fc_pw')||DEFAULT_PW;}
+function doLogin(){
+  const input=document.getElementById('loginPw');
+  const err=document.getElementById('loginErr');
+  if(input.value===getPw()){
+    document.getElementById('loginScreen').classList.add('hide');
+    setTimeout(()=>{document.getElementById('loginScreen').style.display='none';},400);
+    err.textContent='';
+  }else{
+    input.classList.add('err');
+    err.textContent='비밀번호가 올바르지 않습니다.';
+    input.value='';
+    setTimeout(()=>input.classList.remove('err'),400);
+    input.focus();
+  }
+}
+function openPwModal(){
+  document.getElementById('pwCur').value='';
+  document.getElementById('pwNew').value='';
+  document.getElementById('pwNew2').value='';
+  document.getElementById('pwMsg').textContent='';
+  document.getElementById('pwMsg').style.color='';
+  ['pwCur','pwNew','pwNew2'].forEach(id=>document.getElementById(id).classList.remove('err'));
+  document.getElementById('pwModal').classList.add('on');
+  setTimeout(()=>document.getElementById('pwCur').focus(),100);
+}
+function closePwModal(){document.getElementById('pwModal').classList.remove('on');}
+function changePw(){
+  const cur=document.getElementById('pwCur').value;
+  const nw=document.getElementById('pwNew').value;
+  const nw2=document.getElementById('pwNew2').value;
+  const msg=document.getElementById('pwMsg');
+  ['pwCur','pwNew','pwNew2'].forEach(id=>document.getElementById(id).classList.remove('err'));
+  if(cur!==getPw()){document.getElementById('pwCur').classList.add('err');msg.style.color='#E24B4A';msg.textContent='현재 비밀번호가 올바르지 않습니다.';return;}
+  if(nw.length<4){document.getElementById('pwNew').classList.add('err');msg.style.color='#E24B4A';msg.textContent='새 비밀번호는 4자리 이상이어야 합니다.';return;}
+  if(nw!==nw2){document.getElementById('pwNew2').classList.add('err');msg.style.color='#E24B4A';msg.textContent='새 비밀번호가 일치하지 않습니다.';return;}
+  localStorage.setItem('fc_pw',nw);
+  msg.style.color='#3B6D11';msg.textContent='✓ 비밀번호가 변경되었습니다.';
+  setTimeout(()=>closePwModal(),1200);
+}
+document.getElementById('pwModal').addEventListener('click',function(e){if(e.target===this)closePwModal();});
+
+const TODAY=new Date();
+const YR=TODAY.getFullYear();
+const MOS=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+const BIZ=[
+  {id:'self',name:'자체교육원',unit:190960,type:'self',color:'#185FA5'},
+  {id:'refund',name:'사업주 환급과정',unit:190960,type:'self',color:'#1D9E75'},
+  {id:'legal',name:'법정의무교육',unit:5000,type:'legal',color:'#854F0B'},
+  {id:'guard',name:'경비직무교육',unit:1000,type:'guard',color:'#639922'},
+];
+const SDATA={
+  self:[
+    {co:'한국물류교육원',nm:'김지수',pr:5,sc:0,ll:'14일 전',st:'2026-03-01',en:'2026-03-31'},
+    {co:'한국물류교육원',nm:'이민호',pr:12,sc:0,ll:'11일 전',st:'2026-03-01',en:'2026-03-31'},
+    {co:'한국물류교육원',nm:'정다은',pr:38,sc:45,ll:'3일 전',st:'2026-03-01',en:'2026-03-31'},
+    {co:'한국물류교육원',nm:'최유진',pr:82,sc:75,ll:'오늘',st:'2026-03-01',en:'2026-03-31'},
+    {co:'서울직업전문학교',nm:'박서연',pr:23,sc:0,ll:'8일 전',st:'2026-05-03',en:'2026-06-02'},
+    {co:'서울직업전문학교',nm:'강예진',pr:18,sc:0,ll:'10일 전',st:'2026-05-03',en:'2026-06-02'},
+    {co:'서울직업전문학교',nm:'오준혁',pr:88,sc:72,ll:'2일 전',st:'2026-05-03',en:'2026-06-02'},
+    {co:'동아평생교육원',nm:'이수현',pr:74,sc:68,ll:'1일 전',st:'2026-04-01',en:'2026-04-30'},
+    {co:'동아평생교육원',nm:'김태호',pr:100,sc:85,ll:'오늘',st:'2026-04-01',en:'2026-04-30'},
+    {co:'미래인재학교',nm:'최현준',pr:31,sc:40,ll:'5일 전',st:'2026-05-02',en:'2026-06-01'},
+    {co:'미래인재학교',nm:'임채원',pr:80,sc:65,ll:'2일 전',st:'2026-05-02',en:'2026-06-01'},
+    {co:'강남직업학교',nm:'류성호',pr:82,sc:78,ll:'오늘',st:'2026-04-15',en:'2026-05-15'},
+    {co:'강남직업학교',nm:'백지연',pr:100,sc:92,ll:'오늘',st:'2026-04-15',en:'2026-05-15'},
+  ],
+  refund:[
+    {co:'(주)대한산업',nm:'이철수',pr:65,sc:72,ll:'2일 전',st:'2026-05-01',en:'2026-05-31'},
+    {co:'(주)대한산업',nm:'박민정',pr:40,sc:0,ll:'7일 전',st:'2026-05-01',en:'2026-05-31'},
+    {co:'(주)대한산업',nm:'김도윤',pr:90,sc:85,ll:'오늘',st:'2026-05-01',en:'2026-05-31'},
+    {co:'한빛제조',nm:'오지원',pr:55,sc:60,ll:'3일 전',st:'2026-04-10',en:'2026-05-10'},
+    {co:'한빛제조',nm:'장현우',pr:20,sc:0,ll:'12일 전',st:'2026-04-10',en:'2026-05-10'},
+    {co:'미래기술(주)',nm:'서유진',pr:85,sc:78,ll:'1일 전',st:'2026-05-05',en:'2026-06-04'},
+    {co:'미래기술(주)',nm:'권태양',pr:72,sc:65,ll:'오늘',st:'2026-05-05',en:'2026-06-04'},
+  ],
+  legal:[
+    {co:'한국물류교육원',nm:'김지수',pr:100,sc:85,ll:'완료',st:'2026-03-01',en:'2026-03-31',type:'산업안전보건',session:1},
+    {co:'한국물류교육원',nm:'이민호',pr:80,sc:72,ll:'완료',st:'2026-03-01',en:'2026-03-31',type:'산업안전보건',session:1},
+    {co:'한국물류교육원',nm:'정다은',pr:100,sc:90,ll:'완료',st:'2026-03-01',en:'2026-03-31',type:'기타법정',session:1},
+    {co:'동아평생교육원',nm:'이수현',pr:60,sc:55,ll:'3일 전',st:'2026-05-01',en:'2026-05-31',type:'산업안전보건',session:1},
+    {co:'동아평생교육원',nm:'김태호',pr:100,sc:92,ll:'오늘',st:'2026-05-01',en:'2026-05-31',type:'산업안전보건',session:1},
+    {co:'서울직업전문학교',nm:'박서연',pr:45,sc:0,ll:'8일 전',st:'2026-05-03',en:'2026-06-02',type:'기타법정',session:1},
+    {co:'서울직업전문학교',nm:'강예진',pr:90,sc:80,ll:'2일 전',st:'2026-05-03',en:'2026-06-02',type:'기타법정',session:1},
+  ],
+  guard:[
+    {co:'강남경비(주)',nm:'최경비',ll:'오늘',st:'2026-01-01',en:'2026-12-31',sessions:[1,1,1,1,1,0,0,0,0,0,0,0]},
+    {co:'강남경비(주)',nm:'박수위',ll:'어제',st:'2026-01-01',en:'2026-12-31',sessions:[1,1,1,1,0,0,0,0,0,0,0,0]},
+    {co:'강남경비(주)',nm:'이대원',ll:'3일 전',st:'2026-01-01',en:'2026-12-31',sessions:[1,1,1,1,1,0,0,0,0,0,0,0]},
+    {co:'부산경비협회',nm:'김순찰',ll:'오늘',st:'2026-01-01',en:'2026-12-31',sessions:[1,1,1,0,0,0,0,0,0,0,0,0]},
+    {co:'부산경비협회',nm:'정경호',ll:'2일 전',st:'2026-01-01',en:'2026-12-31',sessions:[1,1,1,1,0,0,0,0,0,0,0,0]},
+    {co:'인천경비연합',nm:'윤보안',ll:'어제',st:'2026-01-01',en:'2026-12-31',sessions:[1,1,0,0,0,0,0,0,0,0,0,0]},
+  ],
+};
+let DATA={self:[...SDATA.self],refund:[...SDATA.refund],legal:[...SDATA.legal],guard:[...SDATA.guard]};
+let curBiz=0,curPage='overview',dwCo=null,dwTab='learners',dwBk=null;
+
+// ── 구글 시트 연동 ──
+const GAS_URL='https://script.google.com/macros/s/AKfycbzB8CUA2bajKcGhvQavQJQizu-qUWhiy1smphshBf-SHpi80gMp_EJHdma84TWNs5mxRA/exec';
+const BIZ_KEYS=['self','refund','legal','guard'];
+
+function loadFromSheet(bizKey){
+  const biz=BIZ_KEYS.indexOf(bizKey);
+  if(biz<0)return;
+  const label=['자체교육원','사업주환급','법정의무교육','경비직무교육'][biz];
+  document.getElementById('pgsub').textContent=`${label} 데이터 로딩 중...`;
+  fetch(`${GAS_URL}?biz=${bizKey}`)
+    .then(r=>r.json())
+    .then(res=>{
+      if(!res.ok)throw new Error(res.error||'오류');
+      DATA[bizKey]=res.data;
+      updBadge();
+      document.getElementById('pgsub').textContent=`${label} 업데이트 완료 · ${res.data.length}명 · ${new Date().toLocaleString('ko-KR')}`;
+      if(curBiz===biz) renderBiz();
+    })
+    .catch(err=>{
+      document.getElementById('pgsub').textContent=`로드 실패: ${err.message}`;
+      alert(`구글 시트 로드 실패!\n${err.message}`);
+    });
+}
+
+function loadAllSheets(){
+  document.getElementById('pgsub').textContent='구글 시트에서 전체 데이터 로딩 중...';
+  let done=0;
+  BIZ_KEYS.forEach(key=>{
+    fetch(`${GAS_URL}?biz=${key}`)
+      .then(r=>r.json())
+      .then(res=>{
+        if(res.ok) DATA[key]=res.data;
+        done++;
+        if(done===BIZ_KEYS.length){
+          updBadge();
+          document.getElementById('pgsub').textContent=`전체 데이터 로드 완료 · ${new Date().toLocaleString('ko-KR')}`;
+          renderBiz();
+        }
+      })
+      .catch(()=>{ done++; });
+  });
+}
+
+const W=n=>n.toLocaleString('ko-KR')+'원';
+const pc=p=>p<30?'#E24B4A':p<55?'#EF9F27':'#639922';
+const AG=a=>a.length?Math.round(a.reduce((s,r)=>s+(r.pr||0),0)/a.length):0;
+const isOn=r=>{try{return new Date(r.st)<=TODAY&&TODAY<=new Date(r.en)}catch{return false}};
+const isFt=r=>{try{return new Date(r.st)>TODAY}catch{return false}};
+const isDn=r=>{try{return new Date(r.en)<TODAY}catch{return false}};
+const DD=e=>{const d=Math.ceil((new Date(e)-TODAY)/864e5);return d<0?'종료':d<=7?`D-${d}`:`D-${d}`;};
+const SB=st=>st==='active'?'<span class="bdg bon">수강중</span>':'<span class="bdg bof">종료</span>';
+
+function calcFee(r,t){
+  if(t==='self'){const p=r.pr,s=r.sc||0;return p>=80&&s>=60?190960:p>=50?Math.round(190960*(p/100)*0.8):0;}
+  if(t==='legal')return 5000;
+  if(t==='guard')return(r.sessions||[]).filter(s=>s===1).length*1000;
+  return 0;
+}
+function feeLabel(r,t){
+  if(t==='self'){const p=r.pr,s=r.sc||0;if(p>=80&&s>=60)return{l:'100% 지급',c:'b10'};if(p>=80&&s<60)return{l:'80% (평가미달)',c:'b80'};if(p>=50)return{l:'80% (진도)',c:'b80'};return{l:'미지급',c:'bno'};}
+  if(t==='legal')return{l:'개강 확정',c:'b10'};
+  if(t==='guard'){const cnt=(r.sessions||[]).filter(s=>s===1).length;return{l:`${cnt}회 수강`,c:'b10'};}
+  return{l:'-',c:'bof'};
+}
+const getArr=()=>curBiz===0?DATA.self:curBiz===1?DATA.refund:curBiz===2?DATA.legal:DATA.guard;
+const getCos=()=>{const m={};getArr().forEach(r=>{if(!m[r.co])m[r.co]={name:r.co,l:[]};m[r.co].l.push(r)});return Object.values(m);};
+const BAT=ls=>{const m={};ls.forEach(r=>{const k=(r.st||'')+'_'+(r.en||'');if(!m[k])m[k]={k,st:r.st,en:r.en,l:[]};m[k].l.push(r)});return Object.values(m).sort((a,b)=>new Date(b.st||0)-new Date(a.st||0));};
+const BL=(b,i,t)=>`${t-i}기 (${(b.st||'').slice(0,7).replace('-','년 ')}월)`;
+const CST=ls=>ls.some(r=>isOn(r))?'active':'done';
+
+function updBadge(){
+  document.getElementById('ubdg').textContent=DATA.self.filter(r=>isOn(r)&&r.pr<50).length+DATA.refund.filter(r=>isOn(r)&&r.pr<50).length;
+}
+function goSB(pg,el){
+  document.querySelectorAll('.sbi').forEach(i=>i.classList.remove('on'));
+  if(el)el.classList.add('on');
+  curPage=pg;cldw();
+  document.getElementById('pgtit').textContent={overview:'전체 현황',fee:'수수료 정산',urgent:'독려 대상'}[pg]||pg;
+  if(pg==='overview')renderBiz();
+  else if(pg==='fee')renderFeeAll();
+  else if(pg==='urgent')renderUrgent();
+  
+}
+function setBiz(idx,el){
+  curBiz=idx;
+  document.querySelectorAll('.biz-tab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  if(curPage==='overview'||!curPage)renderBiz();
+}
+
+let curMonth=TODAY.getMonth();
+let curYear=TODAY.getFullYear();
+
+function setYear(y){
+  curYear=y;
+  document.querySelectorAll('.ybtn').forEach(b=>b.classList.toggle('on',parseInt(b.dataset.y)===y));
+  renderBizCards();
+}
+
+function setMonth(m){
+  curMonth=m;
+  document.querySelectorAll('.mbtn').forEach((b,i)=>b.classList.toggle('on',i===m));
+  renderBizCards();
+}
+
+// 데이터에서 연도 목록 추출
+function getYears(){
+  const arr=getArr();
+  const ys=new Set();
+  arr.forEach(r=>{
+    if(r.st) ys.add(new Date(r.st).getFullYear());
+    if(r.en) ys.add(new Date(r.en).getFullYear());
+  });
+  ys.add(TODAY.getFullYear());
+  return [...ys].sort();
+}
+
+function renderBiz(){
+  const biz=BIZ[curBiz],arr=getArr(),cos=getCos();
+  let totFee=arr.reduce((s,r)=>s+calcFee(r,biz.type),0);
+  const urgCnt=biz.type==='self'?arr.filter(r=>isOn(r)&&r.pr<50).length:0;
+  const actCnt=biz.type!=='guard'?arr.filter(r=>isOn(r)).length:arr.length;
+  const feeDesc=biz.type==='self'?`진도·평가 기준 · 단가 ${W(biz.unit)}/인`:biz.type==='legal'?`개강 기준 과금 · ${W(biz.unit)}/인·회`:`출석 기준 · ${W(biz.unit)}/인·회 × 연 12회`;
+
+  // 모든 사업 동일하게 년도/월 필터 적용
+  const showFilter = true;
+  const years = getYears();
+
+  const filterHtml = `
+  <div style="background:#F8F8F8;border-radius:10px;padding:10px 12px;margin-bottom:12px">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+      <span style="font-size:12px;color:#555;font-weight:700;flex-shrink:0;min-width:40px">년도</span>
+      ${years.map(y=>`<button class="ybtn${y===curYear?' on':''}" data-y="${y}" onclick="setYear(${y})">${y}년</button>`).join('')}
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+      <span style="font-size:12px;color:#555;font-weight:700;flex-shrink:0;min-width:40px">월</span>
+      ${MOS.map((m,i)=>`<button class="mbtn${i===curMonth?' on':''}" onclick="setMonth(${i})">${m}</button>`).join('')}
+    </div>
+  </div>`;
+
+  // 완료 카드 계산
+  let _dnCnt=0,_confFee=0,_rate=0;
+  if(biz.type==='self'||biz.type==='refund'){
+    _dnCnt=arr.filter(r=>r.pr>=80&&(r.sc||0)>=60).length;
+    _confFee=arr.reduce((s,r)=>{const p=r.pr,sc=r.sc||0;return s+(p>=80&&sc>=60?190960:p>=80?Math.round(190960*0.8):p>=50?Math.round(190960*(p/100)*0.8):0);},0);
+    _rate=arr.length?Math.round(_dnCnt/arr.length*100):0;
+  }else if(biz.type==='legal'){
+    _dnCnt=arr.filter(r=>r.pr>=100).length;
+    _confFee=arr.length*5000;
+    _rate=arr.length?Math.round(_dnCnt/arr.length*100):0;
+  }else{
+    const _curM=TODAY.getMonth();
+    _dnCnt=arr.reduce((s,r)=>s+(r.sessions||[]).filter(x=>x===1).length,0);
+    _confFee=arr.reduce((s,r)=>s+calcFee(r,'guard'),0);
+    _rate=arr.length?Math.round(_dnCnt/(arr.length*(_curM+1))*100):0;
+  }
+  const _rateColor=_rate>=80?'#3B6D11':_rate>=50?'#854F0B':'#E24B4A';
+  const _label=biz.type==='guard'?'누적 출석':'수료 완료';
+  const _subLabel=biz.type==='guard'?'출석률 '+_rate+'%':'수료율 '+_rate+'%';
+  const _completedVal=biz.type==='guard'?_dnCnt+'회':_dnCnt+'명';
+  const _completedCard='<div class="mc" style="border-top:3px solid #3B6D11;border-left:none"><div class="mi" style="color:#3B6D11"><i class="ti ti-circle-check"></i></div><div class="ml">'+_label+'</div><div class="mv" style="color:#3B6D11">'+_completedVal+'</div><div class="ms"><span style="color:'+_rateColor+';font-weight:600">'+_subLabel+'</span></div></div>';
+
+  let h=`<div class="notice"><i class="ti ti-info-circle" style="font-size:17px;flex-shrink:0"></i><span>${biz.name} · ${feeDesc}</span></div>
+  <div class="mg">
+    <div class="mc" style="border-top-color:#185FA5"><div class="mi" style="color:#185FA5"><i class="ti ti-building"></i></div><div class="ml">관리 고객사</div><div class="mv" style="color:#0C2340">${cos.length}</div><div class="ms">전체 계약</div></div>
+    <div class="mc" style="border-top-color:#1D9E75"><div class="mi" style="color:#1D9E75"><i class="ti ti-users"></i></div><div class="ml">전체 수강생</div><div class="mv" style="color:#0C2340">${arr.length}명</div><div class="ms">${biz.type==='guard'?'연간 관리':`수강중 ${actCnt}명`}</div></div>
+    ${_completedCard}
+    <div class="mc" style="border-top-color:${biz.color}"><div class="mi" style="color:${biz.color}"><i class="ti ti-coin"></i></div><div class="ml">예상 수수료</div><div class="mv" style="color:${biz.color};font-size:16px">${W(totFee)}</div><div class="ms">전체 합산</div></div>
+    ${biz.type==='self'?`<div class="mc" style="border-top-color:#E24B4A"><div class="mi" style="color:#E24B4A"><i class="ti ti-bell"></i></div><div class="ml">즉시 독려 필요</div><div class="mv" style="color:#E24B4A">${urgCnt}명</div><div class="ms">진도 50% 미만</div></div>`:
+    biz.type==='legal'?`<div class="mc" style="border-top-color:#EF9F27"><div class="mi" style="color:#854F0B"><i class="ti ti-calendar"></i></div><div class="ml">이번 달 개강</div><div class="mv" style="color:#854F0B">${actCnt}명</div><div class="ms">개강 기준 과금</div></div>`:
+    `<div class="mc" style="border-top-color:#639922"><div class="mi" style="color:#639922"><i class="ti ti-calendar"></i></div><div class="ml">이번 달 수강</div><div class="mv" style="color:#639922">${arr.filter(r=>(r.sessions||[])[TODAY.getMonth()]===1).length}명</div><div class="ms">출석 기준</div></div>`}
+  </div>
+  ${filterHtml}
+  <div class="sl" id="cosLabel">고객사 현황 · 카드 클릭 → 상세 보기</div>
+  <div class="cg" id="cosGrid"></div>`;
+  document.getElementById('cnt').innerHTML=h;
+  renderBizCards();
+}
+
+function renderBizCards(){
+  const biz=BIZ[curBiz],cos=getCos();
+  const mStart=new Date(curYear,curMonth,1);
+  const mEnd=new Date(curYear,curMonth+1,0,23,59,59);
+
+  // 모든 사업 년도+월 필터 적용
+  const filteredCos=cos.filter(c=>{
+    if(biz.type==='guard'){
+      return c.l.some(r=>(r.sessions||[])[curMonth]===1);
+    } else {
+      return c.l.some(r=>{
+        if(!r.st||!r.en)return false;
+        return new Date(r.st)<=mEnd && new Date(r.en)>=mStart;
+      });
+    }
+  });
+
+  const lbl=document.getElementById('cosLabel');
+  if(lbl) lbl.textContent=`${curYear}년 ${MOS[curMonth]} 수강 고객사 ${filteredCos.length}개 · 카드 클릭 → 상세 보기`;
+
+  let h='';
+  if(filteredCos.length===0){
+    h=`<div style="grid-column:1/-1;text-align:center;padding:40px;color:#BBB">
+      <i class="ti ti-calendar-off" style="font-size:37px;display:block;margin-bottom:10px"></i>
+      <div style="font-size:15px;font-weight:600;margin-bottom:6px">${curYear}년 ${MOS[curMonth]}에 수강 중인 고객사가 없어요</div>
+      <div style="font-size:13px">다른 년도 또는 월을 선택해보세요</div>
+    </div>`;
+  }
+  filteredCos.forEach(c=>{
+    const mStart=new Date(curYear,curMonth,1);
+    const mEnd=new Date(curYear,curMonth+1,0,23,59,59);
+    const f=c.l.reduce((s,r)=>s+calcFee(r,biz.type),0);
+    const st=biz.type==='guard'?'active':CST(c.l);
+    if(biz.type==='self'){
+      // 선택한 년월 기준 수강생 필터
+      const mLearners=c.l.filter(r=>r.st&&r.en&&new Date(r.st)<=mEnd&&new Date(r.en)>=mStart);
+      const dL=mLearners,a=AG(dL),u=mLearners.filter(r=>r.pr<50).length;
+      const bats=BAT(c.l),aB=bats.find(b=>new Date(b.st)<=mEnd&&new Date(b.en)>=mStart);
+      const per=aB?`${aB.st.slice(0,10)} ~ ${aB.en.slice(0,10)}`:'';
+      const openDt=aB?aB.st:'';
+      const openLabel=openDt?`개강 ${openDt.slice(0,10)}`:'개강일 미정';
+      const mSt=aB?CST(aB.l):'done';
+      const mFee=mLearners.reduce((s,r)=>s+calcFee(r,biz.type),0);
+      h+=`<div class="cc" onclick="odw('${c.name}')">
+        <div style="display:flex;justify-content:space-between;margin-bottom:2px"><b>${c.name}</b>${SB(mSt)}</div>
+        <div style="margin-bottom:3px"><span style="font-size:11px;background:#F0F6FF;color:#185FA5;padding:2px 8px;border-radius:99px;font-weight:600"><i class="ti ti-calendar-event" style="font-size:11px;margin-right:2px"></i>${openLabel}</span></div>
+        <div style="font-size:12px;color:#AAA;margin-bottom:8px">${per} · ${dL.length}명</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px"><div style="flex:1;height:5px;background:#EEE;border-radius:99px;overflow:hidden"><div style="height:100%;width:${a}%;background:${pc(a)};border-radius:99px"></div></div><span style="font-size:12px;font-weight:600;color:${pc(a)}">${a}%</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:${biz.color};font-weight:600">${W(mFee)}</span>${mSt==='active'?(u>0?`<span style="color:#E24B4A">독려 ${u}명</span>`:`<span style="color:#3B6D11">양호</span>`):'<span style="color:#AAA">수강 종료</span>'}</div>
+      </div>`;
+    } else if(biz.type==='refund'){
+      // 선택한 년월 기준 수강생만 필터
+      const mLearners=c.l.filter(r=>r.st&&r.en&&new Date(r.st)<=mEnd&&new Date(r.en)>=mStart);
+      const aL=mLearners.filter(r=>isOn(r)),dL=mLearners,a=AG(dL),u=aL.filter(r=>r.pr<50).length;
+      const bats=BAT(c.l),aB=bats.find(b=>new Date(b.st)<=mEnd&&new Date(b.en)>=mStart);
+      const per=aB?`${aB.st.slice(0,10)} ~ ${aB.en.slice(0,10)}`:'';
+      const openDt=aB?aB.st:'';
+      const openLabel=openDt?`개강 ${openDt.slice(0,10)}`:'개강일 미정';
+      const mSt=aB?CST(aB.l):'done';
+      const mFee=mLearners.reduce((s,r)=>s+calcFee(r,biz.type),0);
+      h+=`<div class="cc" onclick="odw('${c.name}')">
+        <div style="display:flex;justify-content:space-between;margin-bottom:2px"><b>${c.name}</b>${SB(mSt)}</div>
+        <div style="margin-bottom:3px"><span style="font-size:11px;background:#F0F6FF;color:#1D9E75;padding:2px 8px;border-radius:99px;font-weight:600"><i class="ti ti-calendar-event" style="font-size:11px;margin-right:2px"></i>${openLabel}</span></div>
+        <div style="font-size:12px;color:#AAA;margin-bottom:8px">${per} · ${dL.length}명</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px"><div style="flex:1;height:5px;background:#EEE;border-radius:99px;overflow:hidden"><div style="height:100%;width:${a}%;background:${pc(a)};border-radius:99px"></div></div><span style="font-size:12px;font-weight:600;color:${pc(a)}">${a}%</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:${biz.color};font-weight:600">${W(mFee)}</span>${mSt==='active'?(u>0?`<span style="color:#E24B4A">독려 ${u}명</span>`:`<span style="color:#3B6D11">양호</span>`):'<span style="color:#AAA">수강 종료</span>'}</div>
+      </div>`;
+    } else if(biz.type==='legal'){
+      const mLearners=c.l.filter(r=>r.st&&r.en&&new Date(r.st)<=mEnd&&new Date(r.en)>=mStart);
+      const types=[...new Set(mLearners.map(r=>r.type))];
+      const legalSt=mLearners.map(r=>r.st).filter(Boolean).sort()[0]||'';
+      h+=`<div class="cc" onclick="odw('${c.name}')">
+        <div style="display:flex;justify-content:space-between;margin-bottom:2px"><b>${c.name}</b>${SB(st)}</div>
+        <div style="margin-bottom:4px"><span style="font-size:11px;background:#FFF4E6;color:#854F0B;padding:2px 8px;border-radius:99px;font-weight:600"><i class="ti ti-calendar-event" style="font-size:11px;margin-right:2px"></i>${legalSt?`개강 ${legalSt.slice(0,10)}`:'개강일 미정'}</span></div>
+        <div style="font-size:12px;color:#AAA;margin-bottom:8px">${types.join(' · ')} · ${mLearners.length}명</div>
+        <div style="display:flex;gap:6px;margin-bottom:6px"><span style="font-size:11px;background:#EAF3DE;color:#3B6D11;padding:2px 7px;border-radius:99px">완료 ${mLearners.filter(r=>r.pr>=100).length}명</span><span style="font-size:11px;background:#FAEEDA;color:#633806;padding:2px 7px;border-radius:99px">미완료 ${mLearners.filter(r=>r.pr<100).length}명</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:${biz.color};font-weight:600">${W(mLearners.reduce((s,r)=>s+calcFee(r,biz.type),0))}</span><span style="color:#AAA">개강 기준</span></div>
+      </div>`;
+    } else {
+      const totS=c.l.reduce((s,r)=>s+(r.sessions||[]).filter(x=>x===1).length,0);
+      const thisMoS=c.l.filter(r=>(r.sessions||[])[curMonth]===1).length;
+      const guardSt=c.l[0]?.st||'';
+      h+=`<div class="cc" onclick="odw('${c.name}')">
+        <div style="display:flex;justify-content:space-between;margin-bottom:2px"><b>${c.name}</b><span class="bdg bon">연간 관리</span></div>
+        <div style="margin-bottom:4px"><span style="font-size:11px;background:#F0FAF0;color:#3B6D11;padding:2px 8px;border-radius:99px;font-weight:600"><i class="ti ti-calendar-event" style="font-size:11px;margin-right:2px"></i>${guardSt?`개강 ${guardSt.slice(0,7).replace('-','년 ')}월`:'개강일 미정'}</span></div>
+        <div style="font-size:12px;color:#AAA;margin-bottom:8px">수강생 ${c.l.length}명 · 연 12회</div>
+        <div style="font-size:13px;color:#666;margin-bottom:5px">${MOS[curMonth]} 출석 <b style="color:#639922">${thisMoS}명</b> · 누적 <b style="color:#639922">${totS}회</b></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:${biz.color};font-weight:600">${W(f)}</span><span style="color:#AAA">출석 기준</span></div>
+      </div>`;
+    }
+  });
+  const grid=document.getElementById('cosGrid');
+  if(grid) grid.innerHTML=h;
+}
+
+function renderFeeAll(){
+  let h='',grand=0;
+  BIZ.forEach((biz,idx)=>{
+    const arr=idx===0?DATA.self:idx===1?DATA.refund:idx===2?DATA.legal:DATA.guard;
+    const tot=arr.reduce((s,r)=>s+calcFee(r,biz.type),0);grand+=tot;
+    const cos=idx===0?Object.keys(DATA.self.reduce((m,r)=>{m[r.co]=1;return m},{})).length:idx===1?Object.keys(DATA.refund.reduce((m,r)=>{m[r.co]=1;return m},{})).length:idx===2?Object.keys(DATA.legal.reduce((m,r)=>{m[r.co]=1;return m},{})).length:Object.keys(DATA.guard.reduce((m,r)=>{m[r.co]=1;return m},{})).length;
+    h+=`<div style="background:#fff;border:1px solid #EBEBEB;border-radius:12px;padding:13px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="setBiz(${idx},document.querySelectorAll('.biz-tab')[${idx}]);curPage='overview';renderBiz()"><div><div style="font-size:14px;font-weight:600;color:${biz.color};margin-bottom:4px">${biz.name}</div><div style="font-size:12px;color:#AAA">고객사 ${cos}개 · 수강생 ${arr.length}명 · ${biz.type==='self'||biz.type==='refund'?`단가 ${W(biz.unit)}/인`:biz.type==='legal'?`${W(biz.unit)}/인·회`:`${W(biz.unit)}/인·회 × 12회`}</div></div><div style="font-size:19px;font-weight:700;color:${biz.color}">${W(tot)}</div></div>`;
+  });
+  h+=`<div class="fee-total"><span style="font-size:14px;color:rgba(255,255,255,.7);font-weight:600">전체 합계</span><span style="font-size:23px;font-weight:700;color:#FAC775">${W(grand)}</span></div>`;
+  document.getElementById('cnt').innerHTML=h;
+}
+
+function renderUrgent(){
+  const su=DATA.self.filter(r=>isOn(r)&&r.pr<50),ru=DATA.refund.filter(r=>isOn(r)&&r.pr<50);
+  const all=[...su.map(r=>({...r,_bi:0})),...ru.map(r=>({...r,_bi:1}))].sort((a,b)=>a.pr-b.pr);
+  if(!all.length){
+    document.getElementById('cnt').innerHTML=`<div style="text-align:center;padding:48px;color:#BBB"><i class="ti ti-circle-check" style="font-size:41px;display:block;margin-bottom:10px"></i>독려 대상이 없어요 😊</div>`;
+    return;
+  }
+  const danger=all.filter(r=>r.pr<30);
+  const caution=all.filter(r=>r.pr>=30&&r.pr<50);
+
+  function rowHtml(r){
+    const prColor=r.pr<30?'#E24B4A':'#EF9F27';
+    const scTxt=r.sc>0?r.sc+'점':'미응시';
+    const scColor=(r.sc||0)>=60?'#3B6D11':(r.sc||0)>0?'#A32D2D':'#AAA';
+    const bizLabel=r._bi===0?'자체':'환급';
+    const bizColor=r._bi===0?'#185FA5':'#1D9E75';
+    return `<div onclick="curBiz=${r._bi};setBiz(${r._bi},document.querySelectorAll('.biz-tab')[${r._bi}]);odw('${r.co}')"
+      style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:#fff;border:1px solid #EBEBEB;border-radius:10px;margin-bottom:6px;cursor:pointer;transition:box-shadow .12s"
+      onmouseover="this.style.boxShadow='0 2px 10px rgba(0,0,0,.08)'" onmouseout="this.style.boxShadow='none'">
+      <div style="min-width:80px">
+        <div style="font-size:13px;font-weight:600;color:#111">${r.nm}</div>
+        <div style="font-size:11px;color:#888;margin-top:1px">${r.co}</div>
+      </div>
+      <div style="flex:1;height:6px;background:#EEE;border-radius:99px;overflow:hidden">
+        <div style="height:100%;width:${r.pr}%;background:${prColor};border-radius:99px"></div>
+      </div>
+      <span style="font-size:14px;font-weight:700;color:${prColor};min-width:36px;text-align:right">${r.pr}%</span>
+      <span style="font-size:12px;color:${scColor};min-width:40px;text-align:center">${scTxt}</span>
+      <span style="font-size:12px;color:#555;min-width:36px;text-align:center;font-weight:600">${DD(r.en)}</span>
+      <span style="font-size:11px;padding:2px 8px;border-radius:99px;font-weight:600;background:${r._bi===0?'#E6F1FB':'#E6F7F2'};color:${bizColor}">${bizLabel}</span>
+    </div>`;
+  }
+
+  let h='';
+
+  if(danger.length){
+    h+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <i class="ti ti-alert-circle" style="font-size:17px;color:#E24B4A"></i>
+      <span style="font-size:13px;font-weight:700;color:#A32D2D">위험 · ${danger.length}명</span>
+      <span style="font-size:12px;color:#AAA">진도 30% 미만</span>
+    </div>`;
+    h+=danger.map(rowHtml).join('');
+  }
+
+  if(caution.length){
+    h+=`<div style="display:flex;align-items:center;gap:8px;margin:${danger.length?'16px':0} 0 8px">
+      <i class="ti ti-alert-triangle" style="font-size:17px;color:#EF9F27"></i>
+      <span style="font-size:13px;font-weight:700;color:#854F0B">주의 · ${caution.length}명</span>
+      <span style="font-size:12px;color:#AAA">진도 30~50%</span>
+    </div>`;
+    h+=caution.map(rowHtml).join('');
+  }
+
+  // 컬럼 헤더
+  const header=`<div style="display:flex;align-items:center;gap:12px;padding:0 14px;margin-bottom:6px">
+    <span style="min-width:80px;font-size:11px;color:#AAA;font-weight:600">수강생</span>
+    <span style="flex:1;font-size:11px;color:#AAA;font-weight:600">진도율</span>
+    <span style="min-width:36px;font-size:11px;color:#AAA;font-weight:600;text-align:right">진도</span>
+    <span style="min-width:40px;font-size:11px;color:#AAA;font-weight:600;text-align:center">평가</span>
+    <span style="min-width:36px;font-size:11px;color:#AAA;font-weight:600;text-align:center">D-day</span>
+    <span style="min-width:38px;font-size:11px;color:#AAA;font-weight:600;text-align:center">구분</span>
+  </div>`;
+
+  document.getElementById('cnt').innerHTML=`<div style="font-size:14px;font-weight:600;color:#111;margin-bottom:14px">독려 대상 · 총 ${all.length}명</div>`+header+h;
+}
+
+
+
+function odw(name){
+  dwCo=name;
+  const biz=BIZ[curBiz],cos=getCos(),co=cos.find(c=>c.name===name);if(!co)return;
+  if(biz.type==='self'||biz.type==='refund'){const bats=BAT(co.l),aB=bats.find(b=>new Date(b.st)<=TODAY&&TODAY<=new Date(b.en));dwBk=aB?aB.k:bats[0]?.k;rBS(bats);}else{document.getElementById('dwbat').innerHTML='';dwBk=null;}
+  document.getElementById('dwtit').innerHTML=name+' '+SB(biz.type==='guard'?'active':CST(co.l));
+  rPil(co);rSum(co);rDwTabs(biz);rDwBd(co);
+  document.getElementById('dw').classList.add('on');document.getElementById('ov').classList.add('on');
+  document.querySelectorAll('.cc').forEach(el=>el.classList.toggle('sel',(el.getAttribute('onclick')||'').includes(`'${name}'`)));
+}
+function cldw(){document.getElementById('dw').classList.remove('on');document.getElementById('ov').classList.remove('on');document.querySelectorAll('.cc').forEach(el=>el.classList.remove('sel'));dwCo=null;}
+function rBS(bats){document.getElementById('dwbat').innerHTML=`<span style="font-size:12px;color:#888;flex-shrink:0">기수 선택</span>`+bats.map((b,i)=>{const ia=new Date(b.st)<=TODAY&&TODAY<=new Date(b.en);return`<button class="bbt ${b.k===dwBk?'on':''}" onclick="sBat('${b.k}')">${BL(b,i,bats.length)}${ia?' ●':''}</button>`;}).join('');}
+function sBat(k){dwBk=k;const cos=getCos(),co=cos.find(c=>c.name===dwCo);if(!co)return;rBS(BAT(co.l));rPil(co);rSum(co);rDwBd(co);}
+function gCL(co){if(!dwBk)return co.l;return(BAT(co.l).find(x=>x.k===dwBk)||{l:[]}).l;}
+
+function rPil(co){
+  const biz=BIZ[curBiz],ls=gCL(co),tot=ls.reduce((s,r)=>s+calcFee(r,biz.type),0);
+  const allStP=co.l.map(r=>r.st).filter(Boolean).sort();
+  const firstStP=allStP[0]||'';
+  const activeStP=co.l.find(r=>isOn(r))?.st||'';
+  const openInfo=activeStP?`개강 ${activeStP.slice(0,10)} (수강중)`:firstStP?`최근 개강 ${firstStP.slice(0,10)}`:'';
+  document.getElementById('dwmet').textContent=`${openInfo}${openInfo?' · ':''}수강생 ${ls.length}명 · 예상 수수료 ${W(tot)}`;
+  if(biz.type==='self'||biz.type==='refund'){
+    const f1=ls.filter(r=>r.pr>=80&&(r.sc||0)>=60).length,f8=ls.filter(r=>(r.pr>=50&&r.pr<80)||(r.pr>=80&&(r.sc||0)<60)).length,f0=ls.filter(r=>r.pr<50).length;
+    const ep=ls.filter(r=>(r.sc||0)>=60).length,et=ls.filter(r=>(r.sc||0)>0).length;
+    document.getElementById('dwpil').innerHTML=`<span class="pil" style="background:#EAF3DE;color:#3B6D11">100% ${f1}명</span><span class="pil" style="background:#FAEEDA;color:#633806">80% ${f8}명</span><span class="pil" style="background:#FCEBEB;color:#791F1F">미지급 ${f0}명</span><span class="pil" style="background:#E6F1FB;color:#0C447C">${W(tot)}</span><span class="pil" style="background:#F3EBFF;color:#5B21B6">평가 60점↑ ${ep}명 / ${et}명</span>`;
+  }
+  else if(biz.type==='legal'){const done=ls.filter(r=>r.pr>=100).length,ep2=ls.filter(r=>(r.sc||0)>=60).length,et2=ls.filter(r=>(r.sc||0)>0).length;document.getElementById('dwpil').innerHTML=`<span class="pil" style="background:#EAF3DE;color:#3B6D11">완료 ${done}명</span><span class="pil" style="background:#FAEEDA;color:#633806">미완료 ${ls.length-done}명</span><span class="pil" style="background:#E6F1FB;color:#0C447C">${W(tot)}</span><span class="pil" style="background:#F3EBFF;color:#5B21B6">평가 60점↑ ${ep2}명 / ${et2}명</span>`;}
+  else{const ts=ls.reduce((s,r)=>s+(r.sessions||[]).filter(x=>x===1).length,0);document.getElementById('dwpil').innerHTML=`<span class="pil" style="background:#EAF3DE;color:#3B6D11">누적 ${ts}회 출석</span><span class="pil" style="background:#E6F1FB;color:#0C447C">${W(tot)}</span>`;}
+}
+
+function rSum(co){
+  const biz=BIZ[curBiz],ls=gCL(co);
+  if(biz.type==='self'||biz.type==='refund'){
+    const wait=ls.filter(r=>isFt(r)).length,act=ls.filter(r=>isOn(r)),dn=ls.filter(r=>isDn(r)).length;
+    const base=act.length>0?act:ls;
+    const segs=[{lb:'~30%',cl:'#E24B4A',cnt:base.filter(r=>r.pr<30).length},{lb:'30~50%',cl:'#EF9F27',cnt:base.filter(r=>r.pr>=30&&r.pr<50).length},{lb:'50~80%',cl:'#FAC775',cnt:base.filter(r=>r.pr>=50&&r.pr<80).length},{lb:'80~99%',cl:'#97C459',cnt:base.filter(r=>r.pr>=80&&r.pr<100).length},{lb:'100%',cl:'#3B6D11',cnt:base.filter(r=>r.pr>=100).length}];
+    const tot=base.length||1,ep=ls.filter(r=>r.sc>=60).length,et=ls.filter(r=>r.sc>0).length;
+    const segLabel=act.length>0?`수강중 ${act.length}명 기준`:`전체 ${ls.length}명 기준 (종료)`;
+    document.getElementById('dwsum').innerHTML=`<div class="sugg"><div class="sugc"><div class="sugv" style="color:#AAA">${wait}</div><div class="sugl">대기</div></div><div class="sugc"><div class="sugv" style="color:#185FA5">${act.length}</div><div class="sugl">수강 중</div></div><div class="sugc"><div class="sugv" style="color:#3B6D11">${dn}</div><div class="sugl">종료</div></div><div class="sugc"><div class="sugv" style="color:#854F0B">${ls.length}</div><div class="sugl">전체</div></div></div>
+    <div style="font-size:12px;color:#555;font-weight:700;margin-bottom:7px">진도율 구간 <span style="font-weight:400;color:#999">(${segLabel})</span></div>
+    <div style="height:14px;border-radius:99px;overflow:hidden;display:flex;gap:1px;background:#EEE;margin-bottom:10px">${segs.map(s=>`<div style="width:${Math.max(s.cnt/tot*100,s.cnt>0?2:0)}%;background:${s.cl};height:100%"></div>`).join('')}</div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:10px">${segs.map(s=>`<div style="background:#F8F8F8;border-radius:8px;padding:8px 4px;text-align:center;border-left:3px solid ${s.cl}"><div style="font-size:19px;font-weight:700;color:${s.cl}">${s.cnt}</div><div style="font-size:11px;color:#888;margin-top:2px">${s.lb}</div></div>`).join('')}</div>
+    <div class="evalrow"><span style="font-size:12px;color:#555;font-weight:600;flex-shrink:0">평가 60점 이상</span><div class="evalb"><div class="evalf" style="width:${et?Math.round(ep/et*100):0}%"></div></div><b style="font-size:14px;color:#185FA5;flex-shrink:0">${ep}명</b><span style="font-size:12px;color:#AAA;flex-shrink:0">(응시 ${et}명 중)</span></div>`;
+  } else if(biz.type==='legal'){
+    const done=ls.filter(r=>r.pr>=100).length,ing=ls.filter(r=>r.pr>0&&r.pr<100).length,no=ls.filter(r=>r.pr===0).length;
+    const types=[...new Set(ls.map(r=>r.type))];
+    document.getElementById('dwsum').innerHTML=`<div class="sugg"><div class="sugc"><div class="sugv" style="color:#3B6D11">${done}</div><div class="sugl">수료 완료</div></div><div class="sugc"><div class="sugv" style="color:#854F0B">${ing}</div><div class="sugl">수강 중</div></div><div class="sugc"><div class="sugv" style="color:#A32D2D">${no}</div><div class="sugl">미수강</div></div><div class="sugc"><div class="sugv" style="color:#185FA5">${ls.length}</div><div class="sugl">전체</div></div></div>
+    <div style="font-size:11px;color:#888;margin-bottom:5px">교육 유형: ${types.join(' · ')}</div>
+    <div style="font-size:12px;color:#854F0B;padding:7px 10px;background:#FFF8EC;border-radius:6px;border:1px solid #FAC775"><i class="ti ti-info-circle" style="margin-right:4px"></i>법정의무교육은 개강 시 과금 확정 · 수료 여부 무관</div>`;
+  } else {
+    const curM=TODAY.getMonth();
+    const sessSum=Array(12).fill(0).map((_,mi)=>ls.filter(r=>(r.sessions||[])[mi]===1).length);
+    document.getElementById('dwsum').innerHTML=`<div class="sugg"><div class="sugc"><div class="sugv" style="color:#639922">${ls.length}</div><div class="sugl">관리 인원</div></div><div class="sugc"><div class="sugv" style="color:#185FA5">${ls.reduce((s,r)=>s+(r.sessions||[]).filter(x=>x===1).length,0)}</div><div class="sugl">누적 출석</div></div><div class="sugc"><div class="sugv" style="color:#854F0B">${ls.reduce((s,r)=>s+(r.sessions||[]).slice(0,curM+1).filter(x=>x===0).length,0)}</div><div class="sugl">누적 결석</div></div><div class="sugc"><div class="sugv" style="color:#185FA5;font-size:14px">${W(ls.reduce((s,r)=>s+calcFee(r,'guard'),0))}</div><div class="sugl">수수료</div></div></div>
+    <div style="font-size:11px;color:#888;font-weight:600;margin-bottom:6px">월별 출석 현황</div>
+    <div style="display:flex;gap:4px;align-items:flex-end">${MOS.map((m,i)=>`<div style="flex:1;text-align:center"><div style="height:28px;background:#F5F5F5;border-radius:4px;overflow:hidden;display:flex;align-items:flex-end"><div style="width:100%;height:${ls.length?Math.round(sessSum[i]/ls.length*100):0}%;background:${i<=curM?'#639922':'#DDD'};min-height:${sessSum[i]>0?3:0}px"></div></div><div style="font-size:10px;color:#AAA;margin-top:3px">${m}</div><div style="font-size:11px;font-weight:600;color:${i<=curM?'#639922':'#CCC'}">${sessSum[i]}</div></div>`).join('')}</div>
+    <div style="font-size:11px;color:#AAA;margin-top:7px;padding:6px 9px;background:#F5F5F5;border-radius:6px"><i class="ti ti-info-circle" style="margin-right:4px"></i>출석 기준 과금 · 1,000원/인·회 × 연 12회</div>`;
+  }
+}
+
+function rDwTabs(biz){
+  if(biz.type==='self'||biz.type==='refund'){document.getElementById('dwTabRow').innerHTML=`<button class="tab on" onclick="stb('learners',this)"><i class="ti ti-users"></i> 수강생</button><button class="tab" onclick="stb('fee',this)"><i class="ti ti-coin"></i> 수수료</button><button class="tab" onclick="stb('schedule',this)"><i class="ti ti-calendar"></i> 개강 일정</button>`;dwTab='learners';}
+  else if(biz.type==='legal'){document.getElementById('dwTabRow').innerHTML=`<button class="tab on" onclick="stb('learners',this)"><i class="ti ti-users"></i> 수강생</button><button class="tab" onclick="stb('fee',this)"><i class="ti ti-coin"></i> 수수료</button>`;dwTab='learners';}
+  else{document.getElementById('dwTabRow').innerHTML=`<button class="tab on" onclick="stb('attendance',this)"><i class="ti ti-calendar-check"></i> 출석 현황</button><button class="tab" onclick="stb('fee',this)"><i class="ti ti-coin"></i> 수수료</button>`;dwTab='attendance';}
+}
+function stb(tab,el){dwTab=tab;document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));el.classList.add('on');const cos=getCos(),co=cos.find(c=>c.name===dwCo);if(co)rDwBd(co);}
+
+function rDwBd(co){
+  const biz=BIZ[curBiz],ls=gCL(co);let h='';
+  if(dwTab==='learners'){
+    h=`<table><thead><tr><th style="width:20%">수강생</th><th style="width:25%">진도율</th><th style="width:12%">평가</th><th style="width:16%">마지막접속</th><th style="width:10%">D-day</th><th style="width:17%">상태</th></tr></thead><tbody>`+
+    [...ls].sort((a,b)=>a.pr-b.pr).map(r=>{const ft=feeLabel(r,biz.type);return`<tr><td><b>${r.nm}</b></td><td><span class="pb"><span class="pf" style="width:${r.pr}%;background:${pc(r.pr)}"></span></span> <b style="color:${pc(r.pr)}">${r.pr}%</b></td><td style="color:${(r.sc||0)>=60?'#3B6D11':(r.sc||0)>0?'#A32D2D':'#CCC'}">${(r.sc||0)>0?r.sc+'점':'미응시'}</td><td style="color:#888">${r.ll}</td><td style="font-size:12px">${r.en?DD(r.en):'-'}</td><td><span class="bdg ${ft.c}">${ft.l}</span></td></tr>`;}).join('')+`</tbody></table>`;
+  } else if(dwTab==='fee'){
+    const tot=ls.reduce((s,r)=>s+calcFee(r,biz.type),0);
+    h=`<div style="padding:9px 13px;background:#FAFAFA;border-bottom:1px solid #EBEBEB;font-size:12px;color:#888">${biz.type==='legal'?`개강 기준 · ${W(biz.unit)}/인·회`:biz.type==='guard'?`출석 기준 · ${W(biz.unit)}/인·회`:`단가 ${W(biz.unit)}/인`} · 합계 <b style="color:#185FA5">${W(tot)}</b></div>
+    <table><thead><tr><th style="width:25%">수강생</th>${biz.type==='guard'?'<th>출석 회차</th><th>수수료</th>':'<th style="width:22%">진도율</th><th>평가</th><th>수수료</th><th>유형</th>'}</tr></thead><tbody>`+
+    ls.map(r=>{const f=calcFee(r,biz.type),ft=feeLabel(r,biz.type);
+      if(biz.type==='guard'){const cnt=(r.sessions||[]).filter(x=>x===1).length;return`<tr><td><b>${r.nm}</b></td><td style="color:#888">${cnt}회 / 12회</td><td style="font-weight:600;color:#185FA5">${W(f)}</td></tr>`;}
+      return`<tr><td><b>${r.nm}</b></td><td><span class="pb"><span class="pf" style="width:${r.pr}%;background:${pc(r.pr)}"></span></span> <b style="color:${pc(r.pr)}">${r.pr}%</b></td><td style="color:${(r.sc||0)>=60?'#3B6D11':(r.sc||0)>0?'#A32D2D':'#CCC'}">${(r.sc||0)>0?r.sc+'점':'미응시'}</td><td style="font-weight:600;color:#185FA5">${W(f)}</td><td><span class="bdg ${ft.c}">${ft.l}</span></td></tr>`;}).join('')+
+    `</tbody><tfoot><tr><td colspan="${biz.type==='guard'?2:4}">합계</td><td style="color:#185FA5">${W(tot)}</td>${biz.type==='guard'?'':'<td></td>'}</tr></tfoot></table>`;
+  } else if(dwTab==='attendance'){
+    h=`<div style="overflow-x:auto"><table><thead><tr><th style="min-width:90px">수강생</th>${MOS.map(m=>`<th style="width:50px;text-align:center">${m}</th>`).join('')}<th style="text-align:center">합계</th></tr></thead><tbody>`+
+    ls.map(r=>{const cnt=(r.sessions||[]).filter(x=>x===1).length;return`<tr><td><b>${r.nm}</b></td>${(r.sessions||Array(12).fill(0)).map((s,i)=>`<td style="text-align:center;color:${s===1?'#3B6D11':i<=TODAY.getMonth()?'#CCC':'#EEE'};font-size:17px">${s===1?'●':'○'}</td>`).join('')}<td style="text-align:center;font-weight:600;color:#639922">${cnt}회</td></tr>`;}).join('')+
+    `</tbody><tfoot><tr><td>합계</td>${Array(12).fill(0).map((_,mi)=>`<td style="text-align:center;color:#639922;font-weight:600">${ls.filter(r=>(r.sessions||[])[mi]===1).length}</td>`).join('')}<td style="text-align:center;font-weight:600;color:#639922">${ls.reduce((s,r)=>s+(r.sessions||[]).filter(x=>x===1).length,0)}</td></tr></tfoot></table></div>`;
+  } else if(dwTab==='schedule'){
+    const bats=BAT(co.l);const ys=new Date(`${YR}-01-01`),td=365;
+    h=`<div style="padding:14px"><div style="font-size:12px;font-weight:600;margin-bottom:8px">${YR}년 개강 일정</div><div style="display:flex;margin-bottom:3px">${MOS.map(m=>`<div style="flex:1;font-size:10px;color:#AAA;text-align:center">${m}</div>`).join('')}</div><div style="width:100%;height:20px;background:#EEE;border-radius:3px;position:relative;overflow:hidden;margin-bottom:12px">${bats.map(b=>{const l=Math.max(0,(new Date(b.st)-ys)/864e5/td*100).toFixed(1),w=Math.min(100-parseFloat(l),((new Date(b.en)-new Date(b.st))/864e5+1)/td*100).toFixed(1),ia=new Date(b.st)<=TODAY&&TODAY<=new Date(b.en);return`<div style="position:absolute;top:2px;bottom:2px;border-radius:2px;left:${l}%;width:${w}%;background:${ia?'#378ADD':'#B4B2A9'};cursor:pointer" onclick="sBat('${b.k}')"></div>`;}).join('')}<div style="position:absolute;top:0;bottom:0;width:2px;background:#E24B4A;left:${((TODAY-ys)/864e5/td*100).toFixed(1)}%"></div></div>`+
+    bats.map((b,i)=>{const ia=new Date(b.st)<=TODAY&&TODAY<=new Date(b.en),isSel=b.k===dwBk,bF=b.l.reduce((s,r)=>s+calcFee(r,BIZ[curBiz].type),0),days=Math.round((new Date(b.en)-new Date(b.st))/864e5)+1;
+      return`<div onclick="sBat('${b.k}')" style="padding:10px 12px;background:${isSel?'#F0F6FF':'#fff'};border:${isSel?'2px solid #185FA5':'1px solid #EBEBEB'};border-left:3px solid ${ia?'#378ADD':'#B4B2A9'};border-radius:10px;margin-bottom:7px;cursor:pointer"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px"><b style="font-size:13px">${BL(b,i,bats.length)} · ${b.st} ~ ${b.en}</b>${ia?'<span class="bdg bon">수강중</span>':'<span class="bdg bof">종료</span>'}</div><div style="display:flex;gap:12px;font-size:12px;color:#888"><span>${b.l.length}명</span><span>${days}일</span><span><b style="color:#185FA5">${W(bF)}</b></span></div></div>`;}).join('')+`</div>`;
+  }
+  document.getElementById('dwbd').innerHTML=h;
+}
+
+updBadge();renderBiz();
+</script>
+</body>
+</html>
