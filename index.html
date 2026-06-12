@@ -476,11 +476,11 @@ function renderBiz(){
   // 완료 카드 계산 (선택 연도 기준)
   let _dnCnt=0,_confFee=0,_rate=0;
   if(biz.type==='self'||biz.type==='refund'){
-    _dnCnt=yArr.filter(r=>r.pr>=80&&(r.sc||0)>=60).length;
+    _dnCnt=yArr.filter(r=>r.pr>=80).length;
     _confFee=yArr.reduce((s,r)=>{const p=r.pr,sc=r.sc||0;return s+(p>=80&&sc>=60?190960:p>=80?Math.round(190960*0.8):p>=50?Math.round(190960*(p/100)*0.8):0);},0);
     _rate=yArr.length?Math.round(_dnCnt/yArr.length*100):0;
   }else if(biz.type==='legal'){
-    _dnCnt=yArr.filter(r=>r.pr>=100).length;
+    _dnCnt=yArr.filter(r=>r.pr>=80).length;
     _confFee=yArr.length*5000;
     _rate=yArr.length?Math.round(_dnCnt/yArr.length*100):0;
   }else{
@@ -490,8 +490,8 @@ function renderBiz(){
     _rate=yArr.length?Math.round(_dnCnt/(yArr.length*(_curM+1))*100):0;
   }
   const _rateColor=_rate>=80?'#3B6D11':_rate>=50?'#854F0B':'#E24B4A';
-  const _label=biz.type==='guard'?'누적 출석':'수료 완료';
-  const _subLabel=biz.type==='guard'?'출석률 '+_rate+'%':'수료율 '+_rate+'%';
+  const _label=biz.type==='guard'?'누적 출석':'수강 완료';
+  const _subLabel=biz.type==='guard'?'출석률 '+_rate+'%':'완료율 '+_rate+'%';
   const _completedVal=biz.type==='guard'?_dnCnt+'회':_dnCnt+'명';
   const _completedCard='<div class="mc" style="border-top:3px solid #3B6D11;border-left:none"><div class="mi" style="color:#3B6D11"><i class="ti ti-circle-check"></i></div><div class="ml">'+_label+'</div><div class="mv" style="color:#3B6D11">'+_completedVal+'</div><div class="ms"><span style="color:'+_rateColor+';font-weight:600">'+_subLabel+'</span></div></div>';
 
@@ -539,13 +539,13 @@ function renderBizCards(){
   const mTotFee=mArr.reduce((s,r)=>s+calcFee(r,biz.type),0);
   let mDone=0,mRate=0,mUrgCnt=0;
   if(biz.type==='self'||biz.type==='refund'){
-    // 해당 월 종강자 중 수료 완료 (진도 80%+ 평가 60점+)
-    mDone=mEndArr.filter(r=>r.pr>=80&&(r.sc||0)>=60).length;
+    // 해당 월 종강자 중 수강 완료 (진도 80% 이상)
+    mDone=mEndArr.filter(r=>r.pr>=80).length;
     mRate=mEndArr.length?Math.round(mDone/mEndArr.length*100):0;
     mUrgCnt=mArr.filter(r=>isOn(r)&&r.pr<50).length;
   }else if(biz.type==='legal'){
-    // 해당 월 종강자 중 수료 완료
-    mDone=mEndArr.filter(r=>r.pr>=100).length;
+    // 해당 월 종강자 중 수강 완료 (진도 80% 이상)
+    mDone=mEndArr.filter(r=>r.pr>=80).length;
     mRate=mEndArr.length?Math.round(mDone/mEndArr.length*100):0;
   }else{
     mDone=mArr.reduce((s,r)=>(r.sessions||[])[curMonth]===1?s+1:s,0);
@@ -570,9 +570,9 @@ function renderBizCards(){
             <div style="font-size:24px;font-weight:800;color:#1D9E75;letter-spacing:-.5px">${mArr.length}<span style="font-size:13px;font-weight:500;color:#9EA6B4">명</span></div>
           </div>
           <div style="text-align:center;padding:14px 10px;background:#fff;border-radius:10px;border:1px solid #E2E6EE;box-shadow:0 1px 4px rgba(0,0,0,.05)">
-            <div style="font-size:12px;color:#6B7485;margin-bottom:6px;font-weight:600">${biz.type==='guard'?'출석':'수료완료'}</div>
-            <div style="font-size:24px;font-weight:800;color:#3B6D11;letter-spacing:-.5px">${mDone}<span style="font-size:13px;font-weight:500;color:${mRateColor}"> ${mRate}%</span></div>
-            ${biz.type!=='guard'?`<div style="font-size:11px;color:#AAA;margin-top:3px">종강 ${mEndArr.length}명 중</div>`:''}
+            <div style="font-size:12px;color:#6B7485;margin-bottom:6px;font-weight:600">${biz.type==='guard'?'출석':'수강 완료'}</div>
+            <div style="font-size:24px;font-weight:800;color:#3B6D11;letter-spacing:-.5px">${mDone}<span style="font-size:13px;font-weight:500;color:#9EA6B4">명</span> <span style="font-size:13px;font-weight:500;color:${mRateColor}">${mRate}%</span></div>
+            ${biz.type!=='guard'?`<div style="font-size:11px;color:#AAA;margin-top:3px">종강 ${mEndArr.length}명 · 진도 80%+</div>`:''}
           </div>
           <div style="text-align:center;padding:14px 10px;background:#fff;border-radius:10px;border:1px solid #E2E6EE;box-shadow:0 1px 4px rgba(0,0,0,.05)">
             <div style="font-size:12px;color:#6B7485;margin-bottom:6px;font-weight:600">예상 수수료</div>
@@ -782,7 +782,7 @@ function rSum(co){
     const segs=[{lb:'~30%',cl:'#E24B4A',cnt:base.filter(r=>r.pr<30).length},{lb:'30~50%',cl:'#EF9F27',cnt:base.filter(r=>r.pr>=30&&r.pr<50).length},{lb:'50~80%',cl:'#FAC775',cnt:base.filter(r=>r.pr>=50&&r.pr<80).length},{lb:'80~99%',cl:'#97C459',cnt:base.filter(r=>r.pr>=80&&r.pr<100).length},{lb:'100%',cl:'#3B6D11',cnt:base.filter(r=>r.pr>=100).length}];
     const tot=base.length||1,ep=ls.filter(r=>r.sc>=60).length,et=ls.filter(r=>r.sc>0).length;
     const segLabel=act.length>0?`수강중 ${act.length}명 기준`:`전체 ${ls.length}명 기준 (종료)`;
-    document.getElementById('dwsum').innerHTML=`<div class="sugg"><div class="sugc"><div class="sugv" style="color:#AAA">${wait}</div><div class="sugl">대기</div></div><div class="sugc"><div class="sugv" style="color:#185FA5">${act.length}</div><div class="sugl">수강 중</div></div><div class="sugc"><div class="sugv" style="color:#3B6D11">${dn}</div><div class="sugl">종료</div></div><div class="sugc"><div class="sugv" style="color:#854F0B">${ls.length}</div><div class="sugl">전체</div></div></div>
+    document.getElementById('dwsum').innerHTML=`<div class="sugg"><div class="sugc"><div class="sugv" style="color:#AAA">${wait}</div><div class="sugl">대기</div></div><div class="sugc"><div class="sugv" style="color:#185FA5">${act.length}</div><div class="sugl">수강 중</div></div><div class="sugc"><div class="sugv" style="color:#3B6D11">${dn}</div><div class="sugl">수강 완료</div></div><div class="sugc"><div class="sugv" style="color:#854F0B">${ls.length}</div><div class="sugl">전체</div></div></div>
     <div style="font-size:12px;color:#555;font-weight:700;margin-bottom:7px">진도율 구간 <span style="font-weight:400;color:#999">(${segLabel})</span></div>
     <div style="height:14px;border-radius:99px;overflow:hidden;display:flex;gap:1px;background:#EEE;margin-bottom:10px">${segs.map(s=>`<div style="width:${Math.max(s.cnt/tot*100,s.cnt>0?2:0)}%;background:${s.cl};height:100%"></div>`).join('')}</div>
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:10px">${segs.map(s=>`<div style="background:#F8F8F8;border-radius:8px;padding:8px 4px;text-align:center;border-left:3px solid ${s.cl}"><div style="font-size:19px;font-weight:700;color:${s.cl}">${s.cnt}</div><div style="font-size:11px;color:#888;margin-top:2px">${s.lb}</div></div>`).join('')}</div>
