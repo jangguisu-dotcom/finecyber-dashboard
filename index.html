@@ -444,9 +444,17 @@ function getYears(){
 
 function renderBiz(){
   const biz=BIZ[curBiz],arr=getArr(),cos=getCos();
-  let totFee=arr.reduce((s,r)=>s+calcFee(r,biz.type),0);
-  const urgCnt=biz.type==='self'?arr.filter(r=>isOn(r)&&r.pr<50).length:0;
-  const actCnt=biz.type!=='guard'?arr.filter(r=>isOn(r)).length:arr.length;
+  // 월별 필터용
+  const mS=new Date(curYear,curMonth,1),mE=new Date(curYear,curMonth+1,0,23,59,59);
+  const mArr=biz.type==='guard'?arr:arr.filter(r=>r.st&&r.en&&new Date(r.st)<=mE&&new Date(r.en)>=mS);
+  const mCos=cos.filter(c=>biz.type==='guard'?c.l.length>0:c.l.some(r=>r.st&&r.en&&new Date(r.st)<=mE&&new Date(r.en)>=mS));
+  // 상단 카드는 선택 연도 기준
+  const yS=new Date(curYear,0,1),yE=new Date(curYear,11,31,23,59,59);
+  const yArr=biz.type==='guard'?arr:arr.filter(r=>r.st&&r.en&&new Date(r.st)<=yE&&new Date(r.en)>=yS);
+  const yCos=cos.filter(c=>biz.type==='guard'?c.l.length>0:c.l.some(r=>r.st&&r.en&&new Date(r.st)<=yE&&new Date(r.en)>=yS));
+  let totFee=yArr.reduce((s,r)=>s+calcFee(r,biz.type),0);
+  const urgCnt=biz.type==='self'?yArr.filter(r=>isOn(r)&&r.pr<50).length:0;
+  const actCnt=biz.type!=='guard'?yArr.filter(r=>isOn(r)).length:yArr.length;
   const feeDesc=biz.type==='self'?`진도·평가 기준 · 단가 ${W(biz.unit)}/인`:biz.type==='legal'?`개강 기준 과금 · ${W(biz.unit)}/인·회`:`출석 기준 · ${W(biz.unit)}/인·회 × 연 12회`;
 
   // 모든 사업 동일하게 년도/월 필터 적용
@@ -465,21 +473,21 @@ function renderBiz(){
     </div>
   </div>`;
 
-  // 완료 카드 계산
+  // 완료 카드 계산 (선택 연도 기준)
   let _dnCnt=0,_confFee=0,_rate=0;
   if(biz.type==='self'||biz.type==='refund'){
-    _dnCnt=arr.filter(r=>r.pr>=80&&(r.sc||0)>=60).length;
-    _confFee=arr.reduce((s,r)=>{const p=r.pr,sc=r.sc||0;return s+(p>=80&&sc>=60?190960:p>=80?Math.round(190960*0.8):p>=50?Math.round(190960*(p/100)*0.8):0);},0);
-    _rate=arr.length?Math.round(_dnCnt/arr.length*100):0;
+    _dnCnt=yArr.filter(r=>r.pr>=80&&(r.sc||0)>=60).length;
+    _confFee=yArr.reduce((s,r)=>{const p=r.pr,sc=r.sc||0;return s+(p>=80&&sc>=60?190960:p>=80?Math.round(190960*0.8):p>=50?Math.round(190960*(p/100)*0.8):0);},0);
+    _rate=yArr.length?Math.round(_dnCnt/yArr.length*100):0;
   }else if(biz.type==='legal'){
-    _dnCnt=arr.filter(r=>r.pr>=100).length;
-    _confFee=arr.length*5000;
-    _rate=arr.length?Math.round(_dnCnt/arr.length*100):0;
+    _dnCnt=yArr.filter(r=>r.pr>=100).length;
+    _confFee=yArr.length*5000;
+    _rate=yArr.length?Math.round(_dnCnt/yArr.length*100):0;
   }else{
     const _curM=TODAY.getMonth();
-    _dnCnt=arr.reduce((s,r)=>s+(r.sessions||[]).filter(x=>x===1).length,0);
-    _confFee=arr.reduce((s,r)=>s+calcFee(r,'guard'),0);
-    _rate=arr.length?Math.round(_dnCnt/(arr.length*(_curM+1))*100):0;
+    _dnCnt=yArr.reduce((s,r)=>s+(r.sessions||[]).filter(x=>x===1).length,0);
+    _confFee=yArr.reduce((s,r)=>s+calcFee(r,'guard'),0);
+    _rate=yArr.length?Math.round(_dnCnt/(yArr.length*(_curM+1))*100):0;
   }
   const _rateColor=_rate>=80?'#3B6D11':_rate>=50?'#854F0B':'#E24B4A';
   const _label=biz.type==='guard'?'누적 출석':'수료 완료';
@@ -489,15 +497,16 @@ function renderBiz(){
 
   let h=`<div class="notice"><i class="ti ti-info-circle" style="font-size:17px;flex-shrink:0"></i><span>${biz.name} · ${feeDesc}</span></div>
   <div class="mg">
-    <div class="mc" style="border-top-color:#185FA5"><div class="mi" style="color:#185FA5"><i class="ti ti-building"></i></div><div class="ml">관리 고객사</div><div class="mv" style="color:#0C2340">${cos.length}</div><div class="ms">전체 계약</div></div>
-    <div class="mc" style="border-top-color:#1D9E75"><div class="mi" style="color:#1D9E75"><i class="ti ti-users"></i></div><div class="ml">전체 수강생</div><div class="mv" style="color:#0C2340">${arr.length}명</div><div class="ms">${biz.type==='guard'?'연간 관리':`수강중 ${actCnt}명`}</div></div>
+    <div class="mc" style="border-top-color:#185FA5"><div class="mi" style="color:#185FA5"><i class="ti ti-building"></i></div><div class="ml">관리 고객사</div><div class="mv" style="color:#0C2340">${yCos.length}</div><div class="ms">${curYear}년 기준</div></div>
+    <div class="mc" style="border-top-color:#1D9E75"><div class="mi" style="color:#1D9E75"><i class="ti ti-users"></i></div><div class="ml">전체 수강생</div><div class="mv" style="color:#0C2340">${yArr.length}명</div><div class="ms">${biz.type==='guard'?'연간 관리':`수강중 ${actCnt}명`}</div></div>
     ${_completedCard}
-    <div class="mc" style="border-top-color:${biz.color}"><div class="mi" style="color:${biz.color}"><i class="ti ti-coin"></i></div><div class="ml">예상 수수료</div><div class="mv" style="color:${biz.color};font-size:16px">${W(totFee)}</div><div class="ms">전체 합산</div></div>
-    ${biz.type==='self'?`<div class="mc" style="border-top-color:#E24B4A"><div class="mi" style="color:#E24B4A"><i class="ti ti-bell"></i></div><div class="ml">즉시 독려 필요</div><div class="mv" style="color:#E24B4A">${urgCnt}명</div><div class="ms">진도 50% 미만</div></div>`:
-    biz.type==='legal'?`<div class="mc" style="border-top-color:#EF9F27"><div class="mi" style="color:#854F0B"><i class="ti ti-calendar"></i></div><div class="ml">이번 달 개강</div><div class="mv" style="color:#854F0B">${actCnt}명</div><div class="ms">개강 기준 과금</div></div>`:
-    `<div class="mc" style="border-top-color:#639922"><div class="mi" style="color:#639922"><i class="ti ti-calendar"></i></div><div class="ml">이번 달 수강</div><div class="mv" style="color:#639922">${arr.filter(r=>(r.sessions||[])[TODAY.getMonth()]===1).length}명</div><div class="ms">출석 기준</div></div>`}
+    <div class="mc" style="border-top-color:${biz.color}"><div class="mi" style="color:${biz.color}"><i class="ti ti-coin"></i></div><div class="ml">예상 수수료</div><div class="mv" style="color:${biz.color};font-size:16px">${W(totFee)}</div><div class="ms">${curYear}년 합산</div></div>
+    ${biz.type==='self'?`<div class="mc" style="border-top-color:#E24B4A"><div class="mi" style="color:#E24B4A"><i class="ti ti-bell"></i></div><div class="ml">즉시 독려 필요</div><div class="mv" style="color:#E24B4A">${urgCnt}명</div><div class="ms">${curYear}년 기준</div></div>`:
+    biz.type==='legal'?`<div class="mc" style="border-top-color:#EF9F27"><div class="mi" style="color:#854F0B"><i class="ti ti-calendar"></i></div><div class="ml">${curYear}년 개강</div><div class="mv" style="color:#854F0B">${actCnt}명</div><div class="ms">개강 기준 과금</div></div>`:
+    `<div class="mc" style="border-top-color:#639922"><div class="mi" style="color:#639922"><i class="ti ti-calendar"></i></div><div class="ml">${curYear}년 수강</div><div class="mv" style="color:#639922">${yArr.length}명</div><div class="ms">연간 관리</div></div>`}
   </div>
   ${filterHtml}
+  <div id="monthSummary"></div>
   <div class="sl" id="cosLabel">고객사 현황 · 카드 클릭 → 상세 보기</div>
   <div class="cg" id="cosGrid"></div>`;
   document.getElementById('cnt').innerHTML=h;
@@ -508,11 +517,12 @@ function renderBizCards(){
   const biz=BIZ[curBiz],cos=getCos();
   const mStart=new Date(curYear,curMonth,1);
   const mEnd=new Date(curYear,curMonth+1,0,23,59,59);
+  const arr=getArr();
 
-  // 모든 사업 년도+월 필터 적용
+  // 월별 필터
   const filteredCos=cos.filter(c=>{
     if(biz.type==='guard'){
-      return c.l.some(r=>(r.sessions||[])[curMonth]===1);
+      return c.l.length>0;
     } else {
       return c.l.some(r=>{
         if(!r.st||!r.en)return false;
@@ -520,6 +530,52 @@ function renderBizCards(){
       });
     }
   });
+
+  // ── 월별 요약 박스 ──
+  const mArr=biz.type==='guard'?arr:arr.filter(r=>r.st&&r.en&&new Date(r.st)<=mEnd&&new Date(r.en)>=mStart);
+  const mTotFee=mArr.reduce((s,r)=>s+calcFee(r,biz.type),0);
+  let mDone=0,mRate=0,mUrgCnt=0;
+  if(biz.type==='self'||biz.type==='refund'){
+    mDone=mArr.filter(r=>r.pr>=80&&(r.sc||0)>=60).length;
+    mRate=mArr.length?Math.round(mDone/mArr.length*100):0;
+    mUrgCnt=mArr.filter(r=>isOn(r)&&r.pr<50).length;
+  }else if(biz.type==='legal'){
+    mDone=mArr.filter(r=>r.pr>=100).length;
+    mRate=mArr.length?Math.round(mDone/mArr.length*100):0;
+  }else{
+    mDone=mArr.reduce((s,r)=>s+(r.sessions||[])[curMonth]===1?1:0,0);
+    mRate=mArr.length?Math.round(mDone/mArr.length*100):0;
+  }
+  const mRateColor=mRate>=80?'#3B6D11':mRate>=50?'#854F0B':'#E24B4A';
+  const mSumEl=document.getElementById('monthSummary');
+  if(mSumEl){
+    if(mArr.length>0){
+      mSumEl.innerHTML=`<div style="background:#fff;border:1px solid #EBEBEB;border-radius:12px;padding:14px 16px;margin-bottom:14px">
+        <div style="font-size:11px;font-weight:700;color:#888;letter-spacing:.04em;text-transform:uppercase;margin-bottom:10px">${curYear}년 ${MOS[curMonth]} 월별 현황</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+          <div style="text-align:center;padding:10px;background:#F8F9FA;border-radius:8px">
+            <div style="font-size:11px;color:#888;margin-bottom:4px">수강 고객사</div>
+            <div style="font-size:20px;font-weight:700;color:#185FA5">${filteredCos.length}<span style="font-size:12px;font-weight:400;color:#888">개</span></div>
+          </div>
+          <div style="text-align:center;padding:10px;background:#F8F9FA;border-radius:8px">
+            <div style="font-size:11px;color:#888;margin-bottom:4px">수강생</div>
+            <div style="font-size:20px;font-weight:700;color:#1D9E75">${mArr.length}<span style="font-size:12px;font-weight:400;color:#888">명</span></div>
+          </div>
+          <div style="text-align:center;padding:10px;background:#F8F9FA;border-radius:8px">
+            <div style="font-size:11px;color:#888;margin-bottom:4px">${biz.type==='guard'?'출석':'수료완료'}</div>
+            <div style="font-size:20px;font-weight:700;color:#3B6D11">${mDone}<span style="font-size:12px;font-weight:400;color:${mRateColor}"> ${mRate}%</span></div>
+          </div>
+          <div style="text-align:center;padding:10px;background:#F8F9FA;border-radius:8px">
+            <div style="font-size:11px;color:#888;margin-bottom:4px">예상 수수료</div>
+            <div style="font-size:15px;font-weight:700;color:#7C3AED;margin-top:4px">${W(mTotFee)}</div>
+          </div>
+        </div>
+        ${biz.type==='self'&&mUrgCnt>0?`<div style="margin-top:10px;padding:7px 12px;background:#FFF1F1;border-radius:6px;border:1px solid #FCA5A5;font-size:12px;color:#DC2626;font-weight:600"><i class="ti ti-alert-circle" style="margin-right:4px"></i>즉시 독려 필요 ${mUrgCnt}명 · 진도 50% 미만</div>`:''}
+      </div>`;
+    } else {
+      mSumEl.innerHTML='';
+    }
+  }
 
   const lbl=document.getElementById('cosLabel');
   if(lbl) lbl.textContent=`${curYear}년 ${MOS[curMonth]} 수강 고객사 ${filteredCos.length}개 · 카드 클릭 → 상세 보기`;
