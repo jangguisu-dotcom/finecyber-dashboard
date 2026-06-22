@@ -329,6 +329,25 @@ let curBiz=0,curPage='overview',dwCo=null,dwTab='learners',dwBk=null;
 const GAS_URL='https://script.google.com/macros/s/AKfycbzB8CUA2bajKcGhvQavQJQizu-qUWhiy1smphshBf-SHpi80gMp_EJHdma84TWNs5mxRA/exec';
 const BIZ_KEYS=['self','refund','legal','guard'];
 
+// 계약 현황 데이터 (계약 현황 시트에서 로드)
+let CONTRACT=[];
+
+// 회사명으로 계약 정보 조회
+function getContract(coName){
+  return CONTRACT.find(c=>c.co&&coName&&c.co.trim()===coName.trim())||null;
+}
+
+// 예상 수수료 계산 (계약 현황 기준)
+// (연간환급액 - 연간시스템비용) × 훈련비비율
+function calcSelfFee(coName, totalRefund){
+  const ct=getContract(coName);
+  if(!ct) return totalRefund; // 계약정보 없으면 기존 환급액 그대로
+  const sysCost=ct.sysCost||0;
+  const ratio=ct.ratio||0.5;
+  const net=Math.max(0, totalRefund - sysCost);
+  return Math.round(net * ratio);
+}
+
 function loadFromSheet(bizKey){
   const biz=BIZ_KEYS.indexOf(bizKey);
   if(biz<0)return;
@@ -351,14 +370,18 @@ function loadFromSheet(bizKey){
 
 function loadAllSheets(){
   document.getElementById('pgsub').textContent='구글 시트에서 전체 데이터 로딩 중...';
+  const allKeys=[...BIZ_KEYS,'contract'];
   let done=0;
-  BIZ_KEYS.forEach(key=>{
+  allKeys.forEach(key=>{
     fetch(`${GAS_URL}?biz=${key}`)
       .then(r=>r.json())
       .then(res=>{
-        if(res.ok) DATA[key]=res.data;
+        if(res.ok){
+          if(key==='contract') CONTRACT=res.data;
+          else DATA[key]=res.data;
+        }
         done++;
-        if(done===BIZ_KEYS.length){
+        if(done===allKeys.length){
           updBadge();
           document.getElementById('pgsub').textContent=`전체 데이터 로드 완료 · ${new Date().toLocaleString('ko-KR')}`;
           renderBiz();
@@ -379,9 +402,27 @@ const SB=st=>st==='active'?'<span class="bdg bon">수강중</span>':'<span class
 
 function calcFee(r,t){
   if(t==='self'){const p=r.pr,s=r.sc||0;return p>=80&&s>=60?190960:p>=50?Math.round(190960*(p/100)*0.8):0;}
+  if(t==='refund'){const p=r.pr,s=r.sc||0;return p>=80&&s>=60?190960:p>=50?Math.round(190960*(p/100)*0.8):0;}
   if(t==='legal')return 5000;
   if(t==='guard')return(r.sessions||[]).filter(s=>s===1).length*1000;
   return 0;
+}
+
+// 환급액 계산 (수강생별 환급액 합산)
+function calcRefund(arr, t){
+  return arr.reduce((s,r)=>s+calcFee(r,t),0);
+}
+
+// 예상 수수료: 고객사별로 (환급액 합계 - 연간시스템비용) × 훈련비비율
+function calcCoFee(coName, arr, t){
+  const refund=calcRefund(arr,t);
+  if(t!=='self'&&t!=='refund') return refund;
+  const ct=getContract(coName);
+  if(!ct) return refund; // 계약정보 없으면 환급액 그대로
+  const sysCost=ct.sysCost||0;
+  const ratio=ct.ratio||0.5;
+  const net=Math.max(0, refund - sysCost);
+  return Math.round(net * ratio);
 }
 function feeLabel(r,t){
   if(t==='self'){const p=r.pr,s=r.sc||0;if(p>=80&&s>=60)return{l:'100% 지급',c:'b10'};if(p>=80&&s<60)return{l:'80% (평가미달)',c:'b80'};if(p>=50)return{l:'80% (진도)',c:'b80'};return{l:'미지급',c:'bno'};}
@@ -452,7 +493,18 @@ function renderBiz(){
   const yS=new Date(curYear,0,1),yE=new Date(curYear,11,31,23,59,59);
   const yArr=biz.type==='guard'?arr:arr.filter(r=>r.st&&r.en&&new Date(r.st)<=yE&&new Date(r.en)>=yS);
   const yCos=cos.filter(c=>biz.type==='guard'?c.l.length>0:c.l.some(r=>r.st&&r.en&&new Date(r.st)<=yE&&new Date(r.en)>=yS));
-  let totFee=yArr.reduce((s,r)=>s+calcFee(r,biz.type),0);
+  // 예상 환급액 (수강생별 단순 합산)
+  const totRefund=yArr.reduce((s,r)=>s+calcFee(r,biz.type),0);
+  // 예상 수수료 (계약현황 기준: 고객사별 환급액-시스템비용 × 훈련비율)
+  let totFee=0;
+  if(biz.type==='self'||biz.type==='refund'){
+    yCos.forEach(c=>{
+      const cArr=yArr.filter(r=>r.co===c.name);
+      totFee+=calcCoFee(c.name,cArr,biz.type);
+    });
+  } else {
+    totFee=totRefund;
+  }
   const urgCnt=biz.type==='self'?yArr.filter(r=>isOn(r)&&r.pr<50).length:0;
   const actCnt=biz.type!=='guard'?yArr.filter(r=>isOn(r)).length:yArr.length;
   const feeDesc=biz.type==='self'?`진도·평가 기준 · 단가 ${W(biz.unit)}/인`:biz.type==='legal'?`개강 기준 과금 · ${W(biz.unit)}/인·회`:`출석 기준 · ${W(biz.unit)}/인·회 × 연 12회`;
@@ -500,7 +552,7 @@ function renderBiz(){
     <div class="mc" style="border-top-color:#185FA5"><div class="mi" style="color:#185FA5"><i class="ti ti-building"></i></div><div class="ml">관리 고객사</div><div class="mv" style="color:#0C2340">${yCos.length}</div><div class="ms">${curYear}년 기준</div></div>
     <div class="mc" style="border-top-color:#1D9E75"><div class="mi" style="color:#1D9E75"><i class="ti ti-users"></i></div><div class="ml">전체 수강생</div><div class="mv" style="color:#0C2340">${yArr.length}명</div><div class="ms">${biz.type==='guard'?'연간 관리':`수강중 ${actCnt}명`}</div></div>
     ${_completedCard}
-    <div class="mc" style="border-top-color:${biz.color}"><div class="mi" style="color:${biz.color}"><i class="ti ti-coin"></i></div><div class="ml">예상 수수료</div><div class="mv" style="color:${biz.color};font-size:16px">${W(totFee)}</div><div class="ms">${curYear}년 합산</div></div>
+    <div class="mc" style="border-top-color:${biz.color}"><div class="mi" style="color:${biz.color}"><i class="ti ti-coin"></i></div><div class="ml">예상 수수료</div><div class="mv" style="color:${biz.color};font-size:16px">${W(totFee)}</div><div class="ms">${curYear}년 합산<br><span style="font-size:10px;color:#AAA">환급액 ${W(totRefund)}</span></div></div>
     ${biz.type==='self'?`<div class="mc" style="border-top-color:#E24B4A"><div class="mi" style="color:#E24B4A"><i class="ti ti-bell"></i></div><div class="ml">즉시 독려 필요</div><div class="mv" style="color:#E24B4A">${urgCnt}명</div><div class="ms">${curYear}년 기준</div></div>`:
     biz.type==='legal'?`<div class="mc" style="border-top-color:#EF9F27"><div class="mi" style="color:#854F0B"><i class="ti ti-calendar"></i></div><div class="ml">${curYear}년 개강</div><div class="mv" style="color:#854F0B">${actCnt}명</div><div class="ms">개강 기준 과금</div></div>`:
     `<div class="mc" style="border-top-color:#639922"><div class="mi" style="color:#639922"><i class="ti ti-calendar"></i></div><div class="ml">${curYear}년 수강</div><div class="mv" style="color:#639922">${yArr.length}명</div><div class="ms">연간 관리</div></div>`}
@@ -536,7 +588,18 @@ function renderBizCards(){
   const mArr=biz.type==='guard'?arr:arr.filter(r=>r.st&&r.en&&new Date(r.st)<=mEnd&&new Date(r.en)>=mStart);
   // 해당 월 종강자 (수료 판정 대상)
   const mEndArr=biz.type==='guard'?arr:arr.filter(r=>r.en&&new Date(r.en)>=mStart&&new Date(r.en)<=mEnd);
-  const mTotFee=mArr.reduce((s,r)=>s+calcFee(r,biz.type),0);
+  const mTotRefund=mArr.reduce((s,r)=>s+calcFee(r,biz.type),0);
+  // 월별 예상 수수료 (계약현황 기준)
+  let mTotFee=0;
+  if(biz.type==='self'||biz.type==='refund'){
+    const mcos2=Object.keys(mArr.reduce((m,r)=>{m[r.co]=1;return m},{}));
+    mcos2.forEach(coName=>{
+      const cArr=mArr.filter(r=>r.co===coName);
+      mTotFee+=calcCoFee(coName,cArr,biz.type);
+    });
+  } else {
+    mTotFee=mTotRefund;
+  }
   let mDone=0,mRate=0,mUrgCnt=0;
   if(biz.type==='self'||biz.type==='refund'){
     // 해당 월 종강자 중 수강 완료 (진도 80% 이상)
@@ -577,6 +640,7 @@ function renderBizCards(){
           <div style="text-align:center;padding:14px 10px;background:#fff;border-radius:10px;border:1px solid #E2E6EE;box-shadow:0 1px 4px rgba(0,0,0,.05)">
             <div style="font-size:12px;color:#6B7485;margin-bottom:6px;font-weight:600">예상 수수료</div>
             <div style="font-size:17px;font-weight:800;color:#7C3AED;margin-top:6px;letter-spacing:-.3px">${W(mTotFee)}</div>
+            ${(biz.type==='self'||biz.type==='refund')&&CONTRACT.length?`<div style="font-size:11px;color:#AAA;margin-top:3px">환급액 ${W(mTotRefund)}</div>`:''}
           </div>
         </div>
         ${biz.type==='self'&&mUrgCnt>0?`<div style="margin-top:12px;padding:9px 14px;background:#F9FAFB;border-radius:8px;border:1px solid #DDE1E8;font-size:13px;color:#DC2626;font-weight:600;display:flex;align-items:center;gap:6px"><i class="ti ti-alert-circle" style="font-size:16px"></i>즉시 독려 필요 ${mUrgCnt}명 · 진도 50% 미만</div>`:''}
